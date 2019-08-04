@@ -18,6 +18,12 @@ namespace RedSharper.Contracts
 
         public static implicit operator string (RedSingleResult res) => res.AsString();
 
+        public static implicit operator RedSingleResult (string str) => new RedSingleResult(str, RedResultType.BulkString);
+
+        public static implicit operator RedSingleResult (int num) => new RedSingleResult(num, RedResultType.Integer);
+
+        public static implicit operator RedSingleResult (long num) => new RedSingleResult(num, RedResultType.Integer);
+
         public string AsString() => (string)_value;
 
         public int AsInteger() => (int)_value;

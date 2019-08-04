@@ -1,15 +1,16 @@
 using ICSharpCode.Decompiler.CSharp.Syntax;
+using RedSharper.RedIL;
 
 namespace RedSharper.Lua
 {
-    public class LuaCompiler
+    class LuaCompiler
     {
         public LuaCompiler()
         {
 
         }
 
-        public string Compile(SyntaxTree tree)
+        public string Compile(RedILNode tree)
         {
             return null;
         }

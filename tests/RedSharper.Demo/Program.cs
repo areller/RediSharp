@@ -12,6 +12,8 @@ using StackExchange.Redis;
 using Microsoft.Extensions.DependencyInjection;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using RedSharper.Contracts;
+using ICSharpCode.Decompiler.CSharp.Syntax;
 
 namespace RedSharper.Demo
 {
@@ -78,9 +80,9 @@ namespace RedSharper.Demo
 
     interface ICursor
     {
-        OpResult Set(string key, string value);
+        RedResult Set(string key, string value);
 
-        OpResult Get(string key);
+        RedSingleResult Get(string key);
     }
 
     class Foo
@@ -95,7 +97,7 @@ namespace RedSharper.Demo
             _set = new HashSet<object>();
         }
 
-        public void Add<T>(Func<ICursor, T, OpResult> action, T args)
+        public void Add<T>(Func<ICursor, string[], T, RedResult> action, T args, string[] keys = null)
             where T : struct, ITuple
         {
             //var file = "/Users/areller/playground/redsharper/tests/RedSharper.Demo/bin/Debug/netcoreapp2.2/RedSharper.Demo.dll";
@@ -108,7 +110,7 @@ namespace RedSharper.Demo
             //var token = typeof(Foo).GetMethod("Add").MetadataToken;
             var method = MetadataTokenHelpers.TryAsEntityHandle(token);
 
-            var ast = decompiler.DecompileAsString(new List<EntityHandle>()
+            var ast = decompiler.Decompile(new List<EntityHandle>()
             {
                 method.Value
             });
@@ -116,14 +118,24 @@ namespace RedSharper.Demo
             ;
         }
 
-        private void Bar(ICursor c)
+        public void AddTwo<T>(Func<ICursor, string[], T, int> action)
+            where T : struct, ITuple
         {
-            var x = 3;
-            var keys = new string[] { "A", "B", "C" };
-            foreach (var key in keys)
+            var asm = Assembly.GetCallingAssembly();
+            var file = asm.Location;
+            var resolver = new CustomAssemblyResolver(asm);
+            var decompiler = new CSharpDecompiler(file, resolver, new DecompilerSettings());
+
+            var token = action.Method.MetadataToken;
+            //var token = typeof(Foo).GetMethod("Add").MetadataToken;
+            var method = MetadataTokenHelpers.TryAsEntityHandle(token);
+
+            var ast = decompiler.Decompile(new List<EntityHandle>()
             {
-                c.Set("myKey_" + key, x.ToString());
-            }
+                method.Value
+            });
+
+            ;
         }
     }
 
@@ -133,59 +145,43 @@ namespace RedSharper.Demo
 
         static void Main(string[] args)
         {
+            Role role;
+            
+            NodeType type;
             IServiceCollection services;
             IMvcBuilder mvc;
 
             f = new Foo();
 
-            Console.WriteLine("A");
+            f.Add<(int a, int b, int c)>((cursor, k, p) => {
+                var x = 3;
+                x++;
+                (int a, int b, int c) = p;
+                if (a > 0 && a < 5)
+                {
+                    cursor.Set("aa", "a");
+                }
+                else if (a >= 5 && a < 10)
+                {
+                    cursor.Set("aa", "b");
+                }
+                else
+                {
+                    cursor.Set("aa", "c");
+                }
+                return cursor.Set("ok", c.ToString());
+            }, (1, 2, 3));
 
-            AddLambda(1, 4, 5);
-            AddLambda(3, 2, 1);
-
-            for (int i = 0; i < 10; i++)
-            {
-                AddLambda(i, i + 1, i + 6);
-            }
-
-            Task.WaitAll(Enumerable.Range(0, 10)
-                .Select(i => Task.Factory.StartNew(RunNew, i))
-                .ToArray());
-        }
-
-        static void RunNew(object state)
-        {
-            var i = (int)state;
-            AddLambda(i * 100, i * 200, i * 300);
-        } 
-
-        static void AddLambda(int a1, int a2, int a3)
-        {
-            f.Add<(int a, int b, int c)>((cursor, p) => {
+            f.AddTwo<(int a, int b, int c)>((cursor, k, p) => {
                 var x = p.a + 2 * p.b + 3 * p.c;
                 var keys = new string[] { "A", "B", "C" };
                 foreach (var key in keys)
                 {
                     cursor.Set("myKey_" + key, "Hello " + x);
                 }
-                return cursor.Get("isOk");
-            }, (a1, a2, a3));
-        }
-
-        static void Add(Func<ICursor, (int a, int b, int c), OpResult> action, (int a, int b, int c) args)
-        {
-            f.Add(action, args);
-        }
-
-        static OpResult DoJob(ICursor c, (int a, int b, int c) args)
-        {
-            var x = 3 * 2;
-            var keys = new string[] { "A", "B", "C", "D" };
-            foreach (var key in keys)
-            {
-                c.Set("myKey_" + key, "Hello2 " + x);
-            }
-            return c.Get("dfs");
+                cursor.Get("isOk");
+                return 0;
+            });
         }
     }
 }

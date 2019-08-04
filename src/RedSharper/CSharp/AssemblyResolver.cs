@@ -54,7 +54,7 @@ namespace RedSharper.CSharp
             var moduleFileName = Path.Combine(baseDir, moduleName);
             if (!File.Exists(moduleFileName))
             {
-                throw new Exception($"Module {moduleName} could not be found");
+                throw new DecompilationException($"Module {moduleName} could not be found");
             }
 
             return new PEFile(moduleFileName, new FileStream(moduleFileName, FileMode.Open, FileAccess.Read), PEStreamOptions.Default, MetadataReaderOptions.Default);

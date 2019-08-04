@@ -9,20 +9,20 @@ namespace RedSharper
 {
     public class Client
     {
-        private DecompilationStore _decompiler;
+        private ActionDecompiler _decompiler;
 
         public Client(IConnectionMultiplexer connection)
         {
-            _decompiler = new DecompilationStore();
+            _decompiler = new ActionDecompiler();
         }
 
         public async Task<RedResult> Execute(Func<ICursor, string[], RedResult> action, string[] keys = null)
         {
-
+            return null;
         }
 
         public async Task<RedResult> Execute<T>(Func<ICursor, string[], T, RedResult> action, T args, string[] keys = null)
-            where T : struct, ITuple
+            where T : struct
         {
             return null;
         }

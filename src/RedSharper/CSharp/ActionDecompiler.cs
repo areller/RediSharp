@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
+using System.Runtime.CompilerServices;
 using ICSharpCode.Decompiler;
 using ICSharpCode.Decompiler.CSharp;
 using ICSharpCode.Decompiler.CSharp.Syntax;
@@ -11,7 +13,7 @@ using RedSharper.Contracts;
 
 namespace RedSharper.CSharp
 {
-    class DecompilationStore
+    class ActionDecompiler
     {
         private Assembly _rootAssembly;
 
@@ -19,12 +21,9 @@ namespace RedSharper.CSharp
 
         private CSharpDecompiler _decompiler;
 
-        private ConcurrentDictionary<object, Lazy<DecompilationResult>> _cache;
-
-        public DecompilationStore()
+        public ActionDecompiler()
         {
             _rootAssembly = Assembly.GetEntryAssembly();
-            _cache = new ConcurrentDictionary<object, Lazy<DecompilationResult>>();
             _assemblyResolver = new AssemblyResolver(_rootAssembly);
 
             var file = _rootAssembly.Location;
@@ -34,6 +33,7 @@ namespace RedSharper.CSharp
         }
 
         public DecompilationResult Decompile<T>(Func<ICursor, string[], T, RedResult> action)
+            where T : struct
         {
             var token = action.Method.MetadataToken;
             var method = MetadataTokenHelpers.TryAsEntityHandle(token);
@@ -61,7 +61,8 @@ namespace RedSharper.CSharp
 
         private DecompilationResult ExtractTreeAndMetadata(SyntaxTree tree)
         {
-            
+            var firstMethodDeclaration = tree.Children.First(c => c.GetType().Name == typeof(MethodDeclaration).Name) as MethodDeclaration;
+            return null;
         }
     }
 }
