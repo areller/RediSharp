@@ -4,6 +4,7 @@ namespace RedSharper.RedIL.Enums
     {
         Integer,
         String,
-        Boolean
+        Boolean,
+        Multi
     }
 }

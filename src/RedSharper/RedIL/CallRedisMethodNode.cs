@@ -4,9 +4,11 @@ namespace RedSharper.RedIL
 {
     class CallRedisMethodNode : RedILNode
     {
-        public RedisMethod Method { get; }
+        public RedisMethod Method { get; set; }
 
-        public RedILNode[] Arguments { get; }
+        public RedILNode[] Arguments { get; set; }
+
+        public CallRedisMethodNode() : base(RedILNodeType.CallRedisMethod) { }
 
         public CallRedisMethodNode(
             RedisMethod method,
@@ -15,6 +17,11 @@ namespace RedSharper.RedIL
         {
             Method = method;
             Arguments = arguments;
+        }
+
+        public override void AcceptVisitor<TState>(IRedILVisitor<TState> visitor, TState state)
+        {
+            throw new System.NotImplementedException();
         }
     }
 }

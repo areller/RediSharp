@@ -2,6 +2,7 @@ namespace RedSharper.RedIL.Enums
 {
     enum BinaryExpressionOperator
     {
+        StringConcat,
         Add,
         Subtract,
         Multiply,

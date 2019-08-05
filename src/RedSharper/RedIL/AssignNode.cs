@@ -2,30 +2,26 @@ using RedSharper.RedIL.Enums;
 
 namespace RedSharper.RedIL
 {
-    class BinaryExpressionNode : RedILNode
+    class AssignNode : RedILNode
     {
-        public BinaryExpressionOperator Operator { get; set; }
-
         public RedILNode Left { get; set; }
 
         public RedILNode Right { get; set; }
 
-        public BinaryExpressionNode() : base(RedILNodeType.BinaryExpression) { }
+        public AssignNode() : base(RedILNodeType.Assign) { }
 
-        public BinaryExpressionNode(
-            BinaryExpressionOperator op,
+        public AssignNode(
             RedILNode left,
             RedILNode right)
-            : base(RedILNodeType.BinaryExpression)
+            : base(RedILNodeType.Assign)
         {
-            Operator = op;
             Left = left;
             Right = right;
         }
 
         public override void AcceptVisitor<TState>(IRedILVisitor<TState> visitor, TState state)
         {
-            throw new System.NotImplementedException();
+            visitor.VisitAssignNode(this, state);
         }
     }
 }

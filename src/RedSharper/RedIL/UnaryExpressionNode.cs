@@ -4,9 +4,11 @@ namespace RedSharper.RedIL
 {
     class UnaryExpressionNode : RedILNode
     {
-        public UnaryExpressionOperator Operator { get; }
+        public UnaryExpressionOperator Operator { get; set; }
 
-        public RedILNode Operand { get; }
+        public RedILNode Operand { get; set; }
+
+        public UnaryExpressionNode() : base(RedILNodeType.UnaryExpression) { }
 
         public UnaryExpressionNode(
             UnaryExpressionOperator op,
@@ -15,6 +17,11 @@ namespace RedSharper.RedIL
         {
             Operator = op;
             Operand = operand;
+        }
+
+        public override void AcceptVisitor<TState>(IRedILVisitor<TState> visitor, TState state)
+        {
+            throw new System.NotImplementedException();
         }
     }
 }

@@ -1,3 +1,4 @@
+using System.Text;
 using ICSharpCode.Decompiler.CSharp.Syntax;
 using RedSharper.RedIL;
 
@@ -12,7 +13,8 @@ namespace RedSharper.Lua
 
         public string Compile(RedILNode tree)
         {
-            return null;
+            var instance = new CompilationInstance(tree);
+            return instance.Compile();
         }
     }
 }
