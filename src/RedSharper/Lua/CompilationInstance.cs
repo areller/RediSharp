@@ -74,7 +74,6 @@ namespace RedSharper.Lua
                 state.Write(" then");
                 state.NewLine();
                 state.Ident();
-
                 @if.IfTrue.AcceptVisitor(this, state);
                 state.NewLine();
                 state.FinishIdent();
@@ -89,6 +88,9 @@ namespace RedSharper.Lua
                     state.NewLine();
                     state.Ident();
                     @if.IfFalse.AcceptVisitor(this, state);
+                    state.NewLine();
+                    state.FinishIdent();
+                    state.Write("end");
                 }
             }
 
