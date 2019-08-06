@@ -1,6 +1,6 @@
 namespace RedSharper.Contracts.Enums
 {
-    public enum RedResultType
+    public enum RedResultType : byte
     {
         None = 0,
         SimpleString = 1,

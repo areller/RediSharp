@@ -12,9 +12,9 @@ namespace RedSharper.CSharp
 
         public string KeysVariableName { get; }
 
-        public bool ArgumentsAreTuple { get; }
-
         public string[] ArgumentsTupleSubKeys { get; }
+
+        public bool ArgumentsAreTuple => ArgumentsTupleSubKeys != null;
 
         public DecompilationResult(
             AstNode body,
@@ -27,7 +27,6 @@ namespace RedSharper.CSharp
             CursorVariableName = cursorVariableName;
             ArgumentsVariableName = argumentsVariableName;
             KeysVariableName = keysVariableName;
-            ArgumentsAreTuple = argumentsTupleSubKeys != null;
             ArgumentsTupleSubKeys = argumentsTupleSubKeys;
         }
     }

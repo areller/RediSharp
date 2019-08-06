@@ -41,7 +41,7 @@ namespace RedSharper.Lua
             {
                 if (_currentLine == 0)
                 {
-                    for (int i = 0; i < _currentLine; i++) Builder.Append(" ");
+                    for (int i = 0; i < _identation; i++) Builder.Append(" ");
                 }
 
                 Builder.Append(text);

@@ -10,6 +10,7 @@ using ICSharpCode.Decompiler.CSharp;
 using ICSharpCode.Decompiler.CSharp.Syntax;
 using ICSharpCode.Decompiler.Metadata;
 using RedSharper.Contracts;
+using StackExchange.Redis;
 
 namespace RedSharper.CSharp
 {
@@ -27,13 +28,17 @@ namespace RedSharper.CSharp
             _assemblyResolver = new AssemblyResolver(_rootAssembly);
 
             var file = _rootAssembly.Location;
-            var decompiler = new CSharpDecompiler(file, _assemblyResolver, new DecompilerSettings());
+            var decompiler = new CSharpDecompiler(file, _assemblyResolver, new DecompilerSettings()
+            {
+                ExtensionMethods = false
+            });
 
             _decompiler = decompiler;
         }
 
-        public DecompilationResult Decompile<T>(Func<ICursor, string[], T, RedResult> action)
-            where T : struct
+        public DecompilationResult Decompile<TArgs, TRes>(Func<ICursor, RedisKey[], TArgs, TRes> action)
+            where TArgs : struct
+            where TRes : RedResult
         {
             var token = action.Method.MetadataToken;
             var method = MetadataTokenHelpers.TryAsEntityHandle(token);
@@ -46,7 +51,8 @@ namespace RedSharper.CSharp
             return ExtractTreeAndMetadata(ast);
         }
 
-        public DecompilationResult Decompile(Func<ICursor, string[], RedResult> action)
+        public DecompilationResult Decompile<TRes>(Func<ICursor, RedisKey[], TRes> action)
+            where TRes : RedResult
         {
             var token = action.Method.MetadataToken;
             var method = MetadataTokenHelpers.TryAsEntityHandle(token);
@@ -62,7 +68,28 @@ namespace RedSharper.CSharp
         private DecompilationResult ExtractTreeAndMetadata(SyntaxTree tree)
         {
             var firstMethodDeclaration = tree.Children.First(c => c.GetType().Name == typeof(MethodDeclaration).Name) as MethodDeclaration;
-            return null;
+            var methodParameters = firstMethodDeclaration.Parameters.ToArray();
+
+            string cursorName = methodParameters[0].Name;
+            string keysName = methodParameters[1].Name;
+            string argsName = null;
+            string[] argsSubKeys = null;
+
+            if (methodParameters.Length == 3)
+            {
+                argsName = methodParameters[2].Name;
+                if (methodParameters[2].Type is TupleAstType)
+                {
+                    var tupleType = methodParameters[2].Type as TupleAstType;
+                    argsSubKeys = tupleType.Children.Select(child => (child as TupleTypeElement).Name).ToArray();
+                }
+                else
+                {
+                    argsSubKeys = null;
+                }
+            }
+
+            return new DecompilationResult(firstMethodDeclaration.Body, cursorName, argsName, keysName, argsSubKeys);
         }
     }
 }

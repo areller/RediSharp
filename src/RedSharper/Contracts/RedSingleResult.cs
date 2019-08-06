@@ -1,3 +1,4 @@
+using System;
 using RedSharper.Contracts.Enums;
 using StackExchange.Redis;
 
@@ -5,29 +6,33 @@ namespace RedSharper.Contracts
 {
     public class RedSingleResult : RedResult
     {
-        private RedisValue _value;
-
+        private readonly RedisValue _value;
         public override RedResultType Type { get; }
+
+        public RedSingleResult(RedisValue value, RedResultType? resultType)
+        {
+            _value = value;
+            Type = resultType ?? (value.IsInteger ? RedResultType.Integer : RedResultType.BulkString);
+        }
 
         public override bool IsNull => _value.IsNull;
 
-        public RedSingleResult(RedisValue value, RedResultType? type)
-        {
-            Type = type ?? (value.IsInteger ? RedResultType.Integer : RedResultType.BulkString);
-        }
+        public override string ToString() => _value.ToString();
 
-        public static implicit operator string (RedSingleResult res) => res.AsString();
+        #region Implicit Conversions
 
-        public static implicit operator RedSingleResult (string str) => new RedSingleResult(str, RedResultType.BulkString);
+        public static implicit operator string (RedSingleResult result) => result._value;
 
-        public static implicit operator RedSingleResult (int num) => new RedSingleResult(num, RedResultType.Integer);
+        #endregion
 
-        public static implicit operator RedSingleResult (long num) => new RedSingleResult(num, RedResultType.Integer);
+        #region Conversions
 
-        public string AsString() => (string)_value;
+        internal int ConvertToInt() => (int)_value;
 
-        public int AsInteger() => (int)_value;
+        internal long ConvertToLong() => (long)_value;
 
-        public long AsLong() => (long)_value;
+        internal double ConvertToDouble() => (double)_value;
+
+        #endregion
     }
 }

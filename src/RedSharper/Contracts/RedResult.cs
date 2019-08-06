@@ -1,4 +1,6 @@
+using System;
 using RedSharper.Contracts.Enums;
+using StackExchange.Redis;
 
 namespace RedSharper.Contracts
 {
