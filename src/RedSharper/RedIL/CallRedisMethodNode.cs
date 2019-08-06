@@ -1,17 +1,18 @@
+using RedSharper.Enums;
 using RedSharper.RedIL.Enums;
 
 namespace RedSharper.RedIL
 {
     class CallRedisMethodNode : RedILNode
     {
-        public RedisMethod Method { get; set; }
+        public RedisCommand Method { get; set; }
 
         public RedILNode[] Arguments { get; set; }
 
         public CallRedisMethodNode() : base(RedILNodeType.CallRedisMethod) { }
 
         public CallRedisMethodNode(
-            RedisMethod method,
+            RedisCommand method,
             RedILNode[] arguments)
             : base(RedILNodeType.CallRedisMethod)
         {

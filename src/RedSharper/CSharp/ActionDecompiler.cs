@@ -36,7 +36,7 @@ namespace RedSharper.CSharp
             _decompiler = decompiler;
         }
 
-        public DecompilationResult Decompile<TArgs, TRes>(Func<ICursor, RedisKey[], TArgs, TRes> action)
+        public DecompilationResult Decompile<TArgs, TRes>(Func<Cursor, RedisKey[], TArgs, TRes> action)
             where TArgs : struct
             where TRes : RedResult
         {
@@ -51,7 +51,7 @@ namespace RedSharper.CSharp
             return ExtractTreeAndMetadata(ast);
         }
 
-        public DecompilationResult Decompile<TRes>(Func<ICursor, RedisKey[], TRes> action)
+        public DecompilationResult Decompile<TRes>(Func<Cursor, RedisKey[], TRes> action)
             where TRes : RedResult
         {
             var token = action.Method.MetadataToken;

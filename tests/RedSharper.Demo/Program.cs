@@ -1,5 +1,6 @@
 ﻿using RedSharper.Contracts;
 using RedSharper.Contracts.Extensions;
+using RedSharper.Extensions;
 
 namespace RedSharper.Demo
 {

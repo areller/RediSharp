@@ -21,21 +21,21 @@ namespace RedSharper
             _csharpCompiler = new CSharpCompiler();
         }
 
-        public Task Execute(Func<ICursor, RedisKey[], RedResult> action, RedisKey[] keys = null)
+        public Task Execute(Func<Cursor, RedisKey[], RedResult> action, RedisKey[] keys = null)
             => Execute<RedResult>(action, keys);
 
-        public Task Execute<TArgs>(Func<ICursor, RedisKey[], TArgs, RedResult> action, TArgs args, RedisKey[] keys = null)
+        public Task Execute<TArgs>(Func<Cursor, RedisKey[], TArgs, RedResult> action, TArgs args, RedisKey[] keys = null)
             where TArgs : struct
             => Execute<TArgs, RedResult>(action, args, keys);
 
-        public async Task<TRes> Execute<TRes>(Func<ICursor, RedisKey[], TRes> action, RedisKey[] keys = null)
+        public async Task<TRes> Execute<TRes>(Func<Cursor, RedisKey[], TRes> action, RedisKey[] keys = null)
             where TRes : RedResult
         {
             _decompiler.Decompile(action);
             return null;
         }
 
-        public async Task<TRes> Execute<TArgs, TRes>(Func<ICursor, RedisKey[], TArgs, TRes> action, TArgs args, RedisKey[] keys = null)
+        public async Task<TRes> Execute<TArgs, TRes>(Func<Cursor, RedisKey[], TArgs, TRes> action, TArgs args, RedisKey[] keys = null)
             where TArgs : struct
             where TRes : RedResult
         {
