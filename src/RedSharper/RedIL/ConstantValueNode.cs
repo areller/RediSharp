@@ -3,18 +3,15 @@ using RedSharper.RedIL.Enums;
 
 namespace RedSharper.RedIL
 {
-    class ConstantValueNode : RedILNode
+    class ConstantValueNode : ExpressionNode
     {
-        public DataValueType DataType { get; set; }
-
         public object Value { get; set; }
 
         public ConstantValueNode() : base(RedILNodeType.Constant) { }
 
         public ConstantValueNode(DataValueType type, object value)
-            : base(RedILNodeType.Constant)
+            : base(RedILNodeType.Constant, type)
         {
-            DataType = type;
             Value = value;
         }
 

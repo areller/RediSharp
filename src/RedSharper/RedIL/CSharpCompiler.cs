@@ -1,6 +1,7 @@
 using System.Linq;
 using ICSharpCode.Decompiler.CSharp.Syntax;
 using RedSharper.CSharp;
+using Newtonsoft.Json;
 
 namespace RedSharper.RedIL
 {

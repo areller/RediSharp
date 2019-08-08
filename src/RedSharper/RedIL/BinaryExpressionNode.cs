@@ -2,21 +2,22 @@ using RedSharper.RedIL.Enums;
 
 namespace RedSharper.RedIL
 {
-    class BinaryExpressionNode : RedILNode
+    class BinaryExpressionNode : ExpressionNode
     {
         public BinaryExpressionOperator Operator { get; set; }
 
-        public RedILNode Left { get; set; }
+        public ExpressionNode Left { get; set; }
 
-        public RedILNode Right { get; set; }
+        public ExpressionNode Right { get; set; }
 
         public BinaryExpressionNode() : base(RedILNodeType.BinaryExpression) { }
 
         public BinaryExpressionNode(
+            DataValueType dataType,
             BinaryExpressionOperator op,
-            RedILNode left,
-            RedILNode right)
-            : base(RedILNodeType.BinaryExpression)
+            ExpressionNode left,
+            ExpressionNode right)
+            : base(RedILNodeType.BinaryExpression, dataType)
         {
             Operator = op;
             Left = left;

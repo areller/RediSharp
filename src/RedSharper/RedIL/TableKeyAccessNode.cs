@@ -2,7 +2,7 @@ using RedSharper.RedIL.Enums;
 
 namespace RedSharper.RedIL
 {
-    class TableKeyAccessNode : RedILNode
+    class TableKeyAccessNode : ExpressionNode
     {
         public RedILNode Table { get; set; }
 

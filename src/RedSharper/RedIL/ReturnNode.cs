@@ -4,11 +4,11 @@ namespace RedSharper.RedIL
 {
     class ReturnNode : RedILNode
     {
-        public RedILNode Value { get; set; }
+        public ExpressionNode Value { get; set; }
 
         public ReturnNode() : base(RedILNodeType.Return) { }
 
-        public ReturnNode(RedILNode value)
+        public ReturnNode(ExpressionNode value)
             : base(RedILNodeType.Return)
         {
             Value = value;

@@ -12,6 +12,8 @@ namespace RedSharper.RedIL.Enums
         Parameter,
         TableKeyAccess,
         If,
-        Return
+        Return,
+        ArgsTable,
+        KeysTable
     }
 }

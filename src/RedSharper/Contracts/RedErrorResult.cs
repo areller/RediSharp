@@ -17,5 +17,11 @@ namespace RedSharper.Contracts
 
         public override bool IsNull => value == null;
         public override string ToString() => value;
+
+        #region Implicit Conversions
+
+        public static implicit operator bool (RedErrorResult result) => result.IsNull;
+
+        #endregion
     }
 }
