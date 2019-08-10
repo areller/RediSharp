@@ -12,7 +12,7 @@ namespace RedSharper.Contracts
         
         public RedErrorResult(string value)
         {
-            this.value = value ?? throw new ArgumentNullException(nameof(value));
+            this.value = value;
         }
 
         public override bool IsNull => value == null;

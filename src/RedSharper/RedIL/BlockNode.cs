@@ -7,12 +7,18 @@ namespace RedSharper.RedIL
     {
         public IList<RedILNode> Children { get; set; }
 
-        public BlockNode() : base(RedILNodeType.Block) { }
+        public bool Explicit { get; set; }
 
-        public BlockNode(IList<RedILNode> children)
+        public BlockNode() : base(RedILNodeType.Block)
+        {
+            Children = new List<RedILNode>();
+        }
+
+        public BlockNode(IList<RedILNode> children, bool @explicit = true)
             : base(RedILNodeType.Block)
         {
             Children = children;
+            Explicit = @explicit;
         }
 
         public override void AcceptVisitor<TState>(IRedILVisitor<TState> visitor, TState state)

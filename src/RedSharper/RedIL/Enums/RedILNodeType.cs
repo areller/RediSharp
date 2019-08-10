@@ -2,6 +2,7 @@ namespace RedSharper.RedIL.Enums
 {
     public enum RedILNodeType
     {
+        Empty,
         VariableDeclaration,
         Assign,
         BinaryExpression,
@@ -14,6 +15,12 @@ namespace RedSharper.RedIL.Enums
         If,
         Return,
         ArgsTable,
-        KeysTable
+        KeysTable,
+        Break,
+        Nil,
+        Cast,
+        Conditional,
+        DoWhile,
+        While
     }
 }

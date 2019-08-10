@@ -6,13 +6,13 @@ namespace RedSharper.RedIL
     {
         public string Name { get; set; }
 
-        public RedILNode Value { get; set; }
+        public ExpressionNode Value { get; set; }
 
         public VariableDeclareNode() : base(RedILNodeType.VariableDeclaration) { }
 
         public VariableDeclareNode(
             string name,
-            RedILNode value)
+            ExpressionNode value)
             : base(RedILNodeType.VariableDeclaration)
         {
             Name = name;

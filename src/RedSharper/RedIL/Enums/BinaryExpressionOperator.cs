@@ -7,7 +7,7 @@ namespace RedSharper.RedIL.Enums
         Subtract,
         Multiply,
         Divide,
-        Modulu,
+        Modulus,
         Equal,
         Less,
         Greater,

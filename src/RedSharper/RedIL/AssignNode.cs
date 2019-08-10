@@ -4,15 +4,15 @@ namespace RedSharper.RedIL
 {
     class AssignNode : RedILNode
     {
-        public RedILNode Left { get; set; }
+        public ExpressionNode Left { get; set; }
 
-        public RedILNode Right { get; set; }
+        public ExpressionNode Right { get; set; }
 
         public AssignNode() : base(RedILNodeType.Assign) { }
 
         public AssignNode(
-            RedILNode left,
-            RedILNode right)
+            ExpressionNode left,
+            ExpressionNode right)
             : base(RedILNodeType.Assign)
         {
             Left = left;

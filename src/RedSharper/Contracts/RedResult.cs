@@ -9,5 +9,7 @@ namespace RedSharper.Contracts
         public abstract RedResultType Type { get; }
 
         public abstract bool IsNull { get; }
+
+        public static RedResult Ok => new RedErrorResult(null);
     }
 }
