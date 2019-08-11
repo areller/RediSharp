@@ -19,9 +19,7 @@ namespace RedSharper.RedIL
             Operand = operand;
         }
 
-        public override void AcceptVisitor<TState>(IRedILVisitor<TState> visitor, TState state)
-        {
-            throw new System.NotImplementedException();
-        }
+        public override TReturn AcceptVisitor<TReturn, TState>(IRedILVisitor<TReturn, TState> visitor, TState state)
+            => visitor.VisitUnaryExpressionNode(this, state);
     }
 }

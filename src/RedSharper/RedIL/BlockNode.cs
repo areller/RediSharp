@@ -21,9 +21,7 @@ namespace RedSharper.RedIL
             Explicit = @explicit;
         }
 
-        public override void AcceptVisitor<TState>(IRedILVisitor<TState> visitor, TState state)
-        {
-            visitor.VisitBlockNode(this, state);
-        }
+        public override TReturn AcceptVisitor<TReturn, TState>(IRedILVisitor<TReturn, TState> visitor, TState state)
+            => visitor.VisitBlockNode(this, state);
     }
 }

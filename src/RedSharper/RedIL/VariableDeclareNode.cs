@@ -19,9 +19,7 @@ namespace RedSharper.RedIL
             Value = value;
         }
 
-        public override void AcceptVisitor<TState>(IRedILVisitor<TState> visitor, TState state)
-        {
-            visitor.VisitVariableDeclareNode(this, state);
-        }
+        public override TReturn AcceptVisitor<TReturn, TState>(IRedILVisitor<TReturn, TState> visitor, TState state)
+            => visitor.VisitVariableDeclareNode(this, state);
     }
 }

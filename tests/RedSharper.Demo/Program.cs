@@ -1,6 +1,7 @@
 ﻿using RedSharper.Contracts;
 using RedSharper.Contracts.Extensions;
 using RedSharper.Extensions;
+using StackExchange.Redis;
 
 namespace RedSharper.Demo
 {
@@ -41,6 +42,7 @@ namespace RedSharper.Demo
                 }
             }, (1, 2)).Wait();*/
 
+            /*
             client.Execute<(int a, int b), RedResult>((cursor, keys, argv) =>
             {
                 var indices = new int[5];
@@ -48,14 +50,36 @@ namespace RedSharper.Demo
                 {
                     indices[i] = i + 1;
                 }
-                
+
+                string name = "arik";
                 foreach (var index in indices)
                 {
+                    var text = $"Index {index} from {indices.Length} array.. {name}.";
                     cursor.Set("key_" + index, index + 1);
                 }
 
                 return RedResult.Ok;
-            }, (1, 2)).Wait();
+            }, (1, 2)).Wait();*/
+
+            client.Execute((cursor, argv, keys) =>
+            {
+                int numOfIters = (int) argv[1];
+                int xx = int.Parse("2");
+                for (int i = 0; i < numOfIters; i++)
+                {
+                    cursor.Set(key: $"key_{i}", value: numOfIters);
+                }
+
+                string m;
+                if (xx > 2)
+                {
+                    m = "Hello";
+                }
+
+                (int a, int b) = (5, 3);
+
+                return RedResult.Ok;
+            }, new RedisValue[] {"arg1", 5}, null).Wait();
         }
     }
 }

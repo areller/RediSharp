@@ -1,0 +1,26 @@
+using RedSharper.RedIL.Enums;
+
+namespace RedSharper.RedIL
+{
+    class StatusNode : ExpressionNode
+    {
+        public Status Status { get; set; }
+
+        public string Error { get; set; }
+
+        public StatusNode()
+            : base(RedILNodeType.Status)
+        {
+        }
+
+        public StatusNode(Status status, string error = null)
+            : base(RedILNodeType.Status)
+        {
+            Status = status;
+            Error = error;
+        }
+
+        public override TReturn AcceptVisitor<TReturn, TState>(IRedILVisitor<TReturn, TState> visitor, TState state)
+            => visitor.VisitStatusNode(this, state);
+    }
+}

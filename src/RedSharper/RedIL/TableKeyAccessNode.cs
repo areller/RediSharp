@@ -4,21 +4,22 @@ namespace RedSharper.RedIL
 {
     class TableKeyAccessNode : ExpressionNode
     {
-        public RedILNode Table { get; set; }
+        public ExpressionNode Table { get; set; }
 
-        public RedILNode Key { get; set; }
+        public ExpressionNode Key { get; set; }
 
         public TableKeyAccessNode() : base(RedILNodeType.TableKeyAccess) { }
 
         public TableKeyAccessNode(
-            RedILNode table,
-            RedILNode key
+            ExpressionNode table,
+            ExpressionNode key
         ) : base(RedILNodeType.TableKeyAccess)
-        { }
-
-        public override void AcceptVisitor<TState>(IRedILVisitor<TState> visitor, TState state)
         {
-            throw new System.NotImplementedException();
+            Table = table;
+            Key = key;
         }
+
+        public override TReturn AcceptVisitor<TReturn, TState>(IRedILVisitor<TReturn, TState> visitor, TState state)
+            => visitor.VisitTableAccessNode(this, state);
     }
 }

@@ -6,6 +6,7 @@ namespace RedSharper.RedIL.Enums
         VariableDeclaration,
         Assign,
         BinaryExpression,
+        UniformExpression,
         UnaryExpression,
         Block,
         Constant,
@@ -21,6 +22,8 @@ namespace RedSharper.RedIL.Enums
         Cast,
         Conditional,
         DoWhile,
-        While
+        While,
+        Status,
+        CallLuaMethod
     }
 }

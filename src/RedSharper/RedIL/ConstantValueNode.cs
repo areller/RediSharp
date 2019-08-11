@@ -15,9 +15,7 @@ namespace RedSharper.RedIL
             Value = value;
         }
 
-        public override void AcceptVisitor<TState>(IRedILVisitor<TState> visitor, TState state)
-        {
-            throw new NotImplementedException();
-        }
+        public override TReturn AcceptVisitor<TReturn, TState>(IRedILVisitor<TReturn, TState> visitor, TState state)
+            => visitor.VisitConstantValueNode(this, state);
     }
 }

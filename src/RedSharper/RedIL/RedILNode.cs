@@ -13,6 +13,6 @@ namespace RedSharper.RedIL
             Type = type;
         }
 
-        public abstract void AcceptVisitor<TState>(IRedILVisitor<TState> visitor, TState state);
+        public abstract TReturn AcceptVisitor<TReturn, TState>(IRedILVisitor<TReturn, TState> visitor, TState state);
     }
 }

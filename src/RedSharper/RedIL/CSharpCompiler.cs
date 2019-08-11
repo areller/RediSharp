@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using ICSharpCode.Decompiler.CSharp.Syntax;
 using ICSharpCode.Decompiler.CSharp.Syntax.PatternMatching;
 using RedSharper.CSharp;
@@ -6,6 +7,11 @@ using RedSharper.RedIL.Enums;
 using RedSharper.RedIL.Utilities;
 using System.Linq;
 using ICSharpCode.Decompiler.CSharp;
+using ICSharpCode.Decompiler.TypeSystem;
+using RedSharper.Contracts;
+using RedSharper.Enums;
+using RedSharper.Extensions;
+using Attribute = ICSharpCode.Decompiler.CSharp.Syntax.Attribute;
 
 namespace RedSharper.RedIL
 {
@@ -15,6 +21,8 @@ namespace RedSharper.RedIL
         {
             public AstNode LastIterativeNode { get; set; }
 
+            public SwitchStatement LastSwitchStatement { get; set; }
+
             public AstNode ParentNode { get; set; }
 
             public State ParentState { get; set; }
@@ -22,6 +30,8 @@ namespace RedSharper.RedIL
             public State NewState(AstNode currentNode)
             {
                 var lastIterative = LastIterativeNode;
+                var lastSwitchStmt = LastSwitchStatement;
+                
                 if (currentNode is DoWhileStatement ||
                     currentNode is WhileStatement ||
                     currentNode is ForStatement ||
@@ -29,12 +39,17 @@ namespace RedSharper.RedIL
                 {
                     lastIterative = currentNode;
                 }
+                else if (currentNode is SwitchStatement)
+                {
+                    lastSwitchStmt = currentNode as SwitchStatement;
+                }
                 
                 return new State()
                 {
                     ParentState = this,
                     ParentNode = currentNode,
-                    LastIterativeNode = lastIterative
+                    LastIterativeNode = lastIterative,
+                    LastSwitchStatement = lastSwitchStmt
                 };
             }
         }
@@ -82,11 +97,17 @@ namespace RedSharper.RedIL
 
             public RedILNode VisitAsExpression(AsExpression asExpression, State data)
             {
+                // We only support casting into primitives for now
                 return asExpression.Expression.AcceptVisitor(this, data.NewState(asExpression));
             }
                 
             public RedILNode VisitAssignmentExpression(AssignmentExpression assignmentExpression, State data)
             {
+                if (data.ParentNode.NodeType != NodeType.Statement)
+                {
+                    throw new RedILException("Assigment is only possible within a statement");
+                }
+                
                 var left = CastUtilities.CastRedILNode<ExpressionNode>(assignmentExpression.Left.AcceptVisitor(this, data.NewState(assignmentExpression)));
                 var right = CastUtilities.CastRedILNode<ExpressionNode>(assignmentExpression.Right.AcceptVisitor(this, data.NewState(assignmentExpression)));
 
@@ -120,7 +141,7 @@ namespace RedSharper.RedIL
             {
                 var op = OperatorUtilities.BinaryOperator(binaryOperatorExpression.Operator);
                 var left = CastUtilities.CastRedILNode<ExpressionNode>(binaryOperatorExpression.Left.AcceptVisitor(this, data.NewState(binaryOperatorExpression)));
-                var right = CastUtilities.CastRedILNode<ExpressionNode>(binaryOperatorExpression.AcceptVisitor(this, data.NewState(binaryOperatorExpression)));
+                var right = CastUtilities.CastRedILNode<ExpressionNode>(binaryOperatorExpression.Right.AcceptVisitor(this, data.NewState(binaryOperatorExpression)));
 
                 return VisitBinaryOperatorExpression(left, right, op, data);
             }
@@ -156,7 +177,7 @@ namespace RedSharper.RedIL
             public RedILNode VisitBlockStatement(BlockStatement blockStatement, State data)
             {
                 return new BlockNode(blockStatement.Children
-                    .Select(child => child.AcceptVisitor(this, data))
+                    .Select(child => child.AcceptVisitor(this, data.NewState(blockStatement)))
                     .Where(child => child.Type != RedILNodeType.Empty)
                     .ToList());
             }
@@ -174,7 +195,16 @@ namespace RedSharper.RedIL
 
             public RedILNode VisitCastExpression(CastExpression castExpression, State data)
             {
-                return castExpression.Expression.AcceptVisitor(this, data.NewState(castExpression));
+                var type = castExpression.Type as PrimitiveType;
+                if (type == null)
+                {
+                    throw new RedILException($"Only supports casting to primitive types");
+                }
+
+                var resType = TypeUtilities.GetValueType(type.KnownTypeCode);
+                var expr = CastUtilities.CastRedILNode<ExpressionNode>(castExpression.Expression.AcceptVisitor(this, data.NewState(castExpression)));
+
+                return new CastNode(resType, expr);
             }
 
             public RedILNode VisitCatchClause(CatchClause catchClause, State data)
@@ -205,7 +235,7 @@ namespace RedSharper.RedIL
 
             public RedILNode VisitConditionalExpression(ConditionalExpression conditionalExpression, State data)
             {
-                var condition = CastUtilities.CastRedILNode<ExpressionNode>(conditionalExpression.AcceptVisitor(this, data.NewState(conditionalExpression)));
+                var condition = CastUtilities.CastRedILNode<ExpressionNode>(conditionalExpression.Condition.AcceptVisitor(this, data.NewState(conditionalExpression)));
                 var ifYes = CastUtilities.CastRedILNode<ExpressionNode>(conditionalExpression.TrueExpression.AcceptVisitor(this, data.NewState(conditionalExpression)));
                 var ifNo = CastUtilities.CastRedILNode<ExpressionNode>(conditionalExpression.FalseExpression.AcceptVisitor(this, data.NewState(conditionalExpression)));
 
@@ -378,25 +408,39 @@ namespace RedSharper.RedIL
 
             public RedILNode VisitIdentifier(Identifier identifier, State data)
             {
-                var ilResolveResult = identifier.Annotations.Where(annot => annot is ILVariableResolveResult)
-                    .FirstOrDefault() as ILVariableResolveResult;
-
-                if (ilResolveResult == null)
-                {
-                    throw new RedILException($"Unable to find type annotation for identifier '{identifier.Name}'");
-                }
-
-                return null;
+                throw new System.NotImplementedException();
             }
 
             public RedILNode VisitIdentifierExpression(IdentifierExpression identifierExpression, State data)
             {
-                throw new System.NotImplementedException();
+                //TOOD: What is the difference between this and identifier?
+                var resType = DataValueType.Unknown;
+                var ilResolveResult = identifierExpression.Annotations.Where(annot => annot is ILVariableResolveResult)
+                    .FirstOrDefault() as ILVariableResolveResult;
+
+                if (ilResolveResult != null)
+                {
+                    if (ilResolveResult.Type.Kind != TypeKind.Array)
+                    {
+                        var type = Type.GetType(ilResolveResult.Type.FullName);
+                        resType = TypeUtilities.GetValueType(type);
+                    }
+                    else
+                    {
+                        resType = DataValueType.Multi;
+                    }
+                }
+                
+                return new IdentifierNode(identifierExpression.Identifier, resType);
             }
 
             public RedILNode VisitIfElseStatement(IfElseStatement ifElseStatement, State data)
             {
-                throw new System.NotImplementedException();
+                var condition = ifElseStatement.Condition.AcceptVisitor(this, data.NewState(ifElseStatement));
+                var ifTrue = ifElseStatement.TrueStatement.AcceptVisitor(this, data.NewState(ifElseStatement));
+                var ifFalse = ifElseStatement.FalseStatement.AcceptVisitor(this, data.NewState(ifElseStatement));
+                
+                return new IfNode(condition, ifTrue, ifFalse);
             }
 
             public RedILNode VisitIndexerDeclaration(IndexerDeclaration indexerDeclaration, State data)
@@ -406,27 +450,108 @@ namespace RedSharper.RedIL
 
             public RedILNode VisitIndexerExpression(IndexerExpression indexerExpression, State data)
             {
-                throw new System.NotImplementedException();
+                var target = CastUtilities.CastRedILNode<ExpressionNode>(indexerExpression.Target.AcceptVisitor(this, data.NewState(indexerExpression)));
+                foreach (var arg in indexerExpression.Arguments)
+                {
+                    var argVisited = CastUtilities.CastRedILNode<ExpressionNode>(arg.AcceptVisitor(this, data.NewState(indexerExpression)));
+                    target = new TableKeyAccessNode(target, argVisited);
+                }
+
+                return target;
             }
 
             public RedILNode VisitInterpolatedStringExpression(InterpolatedStringExpression interpolatedStringExpression, State data)
             {
-                throw new System.NotImplementedException();
+                var strings = new List<ExpressionNode>();
+                foreach (var str in interpolatedStringExpression.Children)
+                {
+                    var child = CastUtilities.CastRedILNode<ExpressionNode>(str.AcceptVisitor(this, data.NewState(interpolatedStringExpression)));
+                    strings.Add(child);
+                }
+                
+                return new UniformOperatorNode(DataValueType.String, BinaryExpressionOperator.StringConcat, strings);
             }
 
             public RedILNode VisitInterpolatedStringText(InterpolatedStringText interpolatedStringText, State data)
             {
-                throw new System.NotImplementedException();
+                return new ConstantValueNode(DataValueType.String, interpolatedStringText.Text);
             }
 
             public RedILNode VisitInterpolation(Interpolation interpolation, State data)
             {
-                throw new System.NotImplementedException();
+                var expr = interpolation.Expression.AcceptVisitor(this, data.NewState(interpolation));
+                return expr;
             }
 
             public RedILNode VisitInvocationExpression(InvocationExpression invocationExpression, State data)
             {
-                throw new System.NotImplementedException();
+                var memberReference = invocationExpression.Target as MemberReferenceExpression;
+                if (memberReference == null)
+                {
+                    throw new RedILException("Invocation can only be made from a member reference");
+                }
+
+                var targetType = memberReference.Target as TypeReferenceExpression;
+                if (targetType == null)
+                {
+                    throw new RedILException("Invocation can only be made from a static type reference");
+                }
+
+                var args = new List<ExpressionNode>();
+                foreach (var arg in invocationExpression.Arguments)
+                {
+                    var argVisited = CastUtilities.CastRedILNode<ExpressionNode>(arg.AcceptVisitor(this, data.NewState(invocationExpression)));
+                    args.Add(argVisited);
+                }
+
+                if (targetType.Type is PrimitiveType)
+                {
+                    var primitiveType = targetType.Type as PrimitiveType;
+                    switch ($"{primitiveType.Keyword}.{memberReference.MemberName}")
+                    {
+                        case "int.Parse":
+                        case "long.Parse":
+                            return new CastNode(DataValueType.Integer, args.First());
+                        case "double.Parse":
+                        case "decimal.Parse":
+                        case "float.Parse":
+                            return new CastNode(DataValueType.Float, args.First());
+                        case "bool.Parse":
+                            return new BinaryExpressionNode(
+                                DataValueType.Boolean,
+                                BinaryExpressionOperator.Equal,
+                                new CallLuaMethodNode(LuaMethod.StringToLower, new ExpressionNode[] {args.First()}),
+                                new ConstantValueNode(DataValueType.String, "true"));
+                        default:
+                            throw new RedILException(
+                                $"Invalid primitive type invocation '{primitiveType.Keyword}.{memberReference.MemberName}'");
+                    }
+                }
+                else if (targetType.Type is SimpleType)
+                {
+                    var simpleType = targetType.Type as SimpleType;
+                    var cmdArgs = args.Skip(1).ToArray();
+                    
+                    switch ($"{simpleType.Identifier}.{memberReference.MemberName}")
+                    {
+                        case "CursorExtensions.Get":
+                            return new CallRedisMethodNode(RedisCommand.Get, cmdArgs);
+                        case "CursorExtensions.Set":
+                            return new CallRedisMethodNode(RedisCommand.Set, cmdArgs);
+                        case "CursorExtensions.HGet":
+                            return new CallRedisMethodNode(RedisCommand.HGet, cmdArgs);
+                        case "CursorExtensions.HMGet":
+                            return new CallRedisMethodNode(RedisCommand.HMGet, cmdArgs);
+                        case "CursorExtensions.HSet":
+                            return new CallRedisMethodNode(RedisCommand.Set, cmdArgs);
+                        default:
+                            throw new RedILException($"Unsupported Redis method '{memberReference.MemberName}'");
+                    }
+                }
+                else
+                {
+                    throw new RedILException($"Invalid type '{targetType.Type.GetType().Name}' for invocation");
+                }
             }
 
             public RedILNode VisitIsExpression(IsExpression isExpression, State data)
@@ -451,7 +576,28 @@ namespace RedSharper.RedIL
 
             public RedILNode VisitMemberReferenceExpression(MemberReferenceExpression memberReferenceExpression, State data)
             {
-                throw new System.NotImplementedException();
+                //Note: this handles explicit member references, invocations are handled solly by VisitInvocationExpression
+                var typeName = ((memberReferenceExpression.Target as TypeReferenceExpression)?.Type as SimpleType)
+                    ?.Identifier;
+                if (typeName == null)
+                {
+                    throw new RedILException($"Only static classes members are supported");
+                }
+
+                switch (typeName)
+                {
+                    case nameof(RedResult):
+                    {
+                        switch (memberReferenceExpression.MemberName)
+                        {
+                            case nameof(RedResult.Ok):
+                                return new StatusNode(Status.Ok);
+                            default: throw new RedILException($"Unsupported member '{memberReferenceExpression.MemberName}' in '{typeName}'");
+                        }
+                        break;
+                    }
+                    default: throw new RedILException($"Unsupported static type '{typeName}'");
+                }
             }
 
             public RedILNode VisitMemberType(MemberType memberType, State data)
@@ -466,6 +612,7 @@ namespace RedSharper.RedIL
 
             public RedILNode VisitNamedArgumentExpression(NamedArgumentExpression namedArgumentExpression, State data)
             {
+                //TODO: Check if needed
                 throw new System.NotImplementedException();
             }
 
@@ -481,12 +628,12 @@ namespace RedSharper.RedIL
 
             public RedILNode VisitNewLine(NewLineNode newLineNode, State data)
             {
-                throw new System.NotImplementedException();
+                return new EmptyNode();
             }
 
             public RedILNode VisitNullNode(AstNode nullNode, State data)
             {
-                throw new System.NotImplementedException();
+                return new NilNode();
             }
 
             public RedILNode VisitNullReferenceExpression(NullReferenceExpression nullReferenceExpression, State data)
@@ -516,7 +663,7 @@ namespace RedSharper.RedIL
 
             public RedILNode VisitParenthesizedExpression(ParenthesizedExpression parenthesizedExpression, State data)
             {
-                throw new System.NotImplementedException();
+                return parenthesizedExpression.Expression.AcceptVisitor(this, data.NewState(parenthesizedExpression));
             }
 
             public RedILNode VisitPatternPlaceholder(AstNode placeholder, Pattern pattern, State data)
@@ -536,7 +683,8 @@ namespace RedSharper.RedIL
 
             public RedILNode VisitPrimitiveExpression(PrimitiveExpression primitiveExpression, State data)
             {
-                throw new System.NotImplementedException();
+                var type = TypeUtilities.GetValueType(primitiveExpression.Value);
+                return new ConstantValueNode(type, primitiveExpression.Value);
             }
 
             public RedILNode VisitPrimitiveType(PrimitiveType primitiveType, State data)
@@ -601,7 +749,8 @@ namespace RedSharper.RedIL
 
             public RedILNode VisitReturnStatement(ReturnStatement returnStatement, State data)
             {
-                throw new System.NotImplementedException();
+                var returned = CastUtilities.CastRedILNode<ExpressionNode>(returnStatement.Expression.AcceptVisitor(this, data.NewState(returnStatement)));
+                return new ReturnNode(returned);
             }
 
             public RedILNode VisitSimpleType(SimpleType simpleType, State data)
@@ -626,6 +775,7 @@ namespace RedSharper.RedIL
 
             public RedILNode VisitSwitchStatement(SwitchStatement switchStatement, State data)
             {
+                //TODO: Handle switch
                 throw new System.NotImplementedException();
             }
 
@@ -696,7 +846,34 @@ namespace RedSharper.RedIL
 
             public RedILNode VisitUnaryOperatorExpression(UnaryOperatorExpression unaryOperatorExpression, State data)
             {
-                throw new System.NotImplementedException();
+                var operand = CastUtilities.CastRedILNode<ExpressionNode>(unaryOperatorExpression.Expression.AcceptVisitor(this, data.NewState(unaryOperatorExpression)));
+                if (OperatorUtilities.IsIncrement(unaryOperatorExpression.Operator))
+                {
+                    if (data.ParentNode.NodeType != NodeType.Statement)
+                    {
+                        throw new RedILException($"Incremental operators can only be used within statements");
+                    }
+                    
+                    BinaryExpressionOperator binaryOp = default;
+                    switch (unaryOperatorExpression.Operator)
+                    {
+                        case UnaryOperatorType.Increment:
+                        case UnaryOperatorType.PostIncrement:
+                            binaryOp = BinaryExpressionOperator.Add;
+                            break;
+                        case UnaryOperatorType.Decrement:
+                        case UnaryOperatorType.PostDecrement:
+                            binaryOp = BinaryExpressionOperator.Subtract;
+                            break;
+                    }
+                    
+                    var constantOne = new ConstantValueNode(DataValueType.Integer, 1);
+                    return new AssignNode(operand, VisitBinaryOperatorExpression(operand, constantOne, binaryOp, data.NewState(unaryOperatorExpression)));
+                }
+
+                var op = OperatorUtilities.UnaryOperator(unaryOperatorExpression.Operator);
+                
+                return new UnaryExpressionNode(op, operand);
             }
 
             public RedILNode VisitUncheckedExpression(UncheckedExpression uncheckedExpression, State data)
@@ -736,22 +913,44 @@ namespace RedSharper.RedIL
 
             public RedILNode VisitVariableDeclarationStatement(VariableDeclarationStatement variableDeclarationStatement, State data)
             {
-                throw new System.NotImplementedException();
+                var block = new BlockNode()
+                {
+                    Explicit = false
+                };
+
+                foreach (var variable in variableDeclarationStatement.Variables)
+                {
+                    var decl = CastUtilities.CastRedILNode<VariableDeclareNode>(
+                        variable.AcceptVisitor(this, data.NewState(variableDeclarationStatement)));
+                    block.Children.Add(decl);
+                }
+
+                return block;
             }
 
             public RedILNode VisitVariableInitializer(VariableInitializer variableInitializer, State data)
             {
-                throw new System.NotImplementedException();
+                var expr = variableInitializer.Initializer != null
+                    ? CastUtilities.CastRedILNode<ExpressionNode>(
+                        variableInitializer.Initializer.AcceptVisitor(this, data.NewState(variableInitializer)))
+                    : null;
+                return new VariableDeclareNode(variableInitializer.Name, expr);
             }
 
             public RedILNode VisitWhileStatement(WhileStatement whileStatement, State data)
             {
-                throw new System.NotImplementedException();
+                var condition =
+                    CastUtilities.CastRedILNode<ExpressionNode>(
+                        whileStatement.Condition.AcceptVisitor(this, data.NewState(whileStatement)));
+                var body = CastUtilities.CastRedILNode<BlockNode>(
+                    whileStatement.EmbeddedStatement.AcceptVisitor(this, data.NewState(whileStatement)));
+                
+                return new WhileNode(condition, body);
             }
 
             public RedILNode VisitWhitespace(WhitespaceNode whitespaceNode, State data)
             {
-                throw new System.NotImplementedException();
+                return new EmptyNode();
             }
 
             public RedILNode VisitYieldBreakStatement(YieldBreakStatement yieldBreakStatement, State data)

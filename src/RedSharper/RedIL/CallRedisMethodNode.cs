@@ -18,22 +18,20 @@ namespace RedSharper.RedIL
 
         public RedisCommand Method { get; set; }
 
-        public RedILNode[] Arguments { get; set; }
+        public ExpressionNode[] Arguments { get; set; }
 
         public CallRedisMethodNode() : base(RedILNodeType.CallRedisMethod) { }
 
         public CallRedisMethodNode(
             RedisCommand method,
-            RedILNode[] arguments)
+            ExpressionNode[] arguments)
             : base(RedILNodeType.CallRedisMethod, CommandTypeTable[method])
         {
             Method = method;
             Arguments = arguments;
         }
 
-        public override void AcceptVisitor<TState>(IRedILVisitor<TState> visitor, TState state)
-        {
-            throw new System.NotImplementedException();
-        }
+        public override TReturn AcceptVisitor<TReturn, TState>(IRedILVisitor<TReturn, TState> visitor, TState state)
+            => visitor.VisitCallRedisMethodNode(this, state);
     }
 }

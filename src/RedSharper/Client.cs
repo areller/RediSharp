@@ -6,6 +6,7 @@ using RedSharper.CSharp;
 using RedSharper.Contracts;
 using RedSharper.RedIL;
 using System.Diagnostics;
+using RedSharper.Lua;
 
 namespace RedSharper
 {
@@ -21,26 +22,14 @@ namespace RedSharper
             _csharpCompiler = new CSharpCompiler();
         }
 
-        public Task Execute(Func<Cursor, RedisKey[], RedResult> action, RedisKey[] keys = null)
-            => Execute<RedResult>(action, keys);
-
-        public Task Execute<TArgs>(Func<Cursor, RedisKey[], TArgs, RedResult> action, TArgs args, RedisKey[] keys = null)
-            where TArgs : struct
-            => Execute<TArgs, RedResult>(action, args, keys);
-
-        public async Task<TRes> Execute<TRes>(Func<Cursor, RedisKey[], TRes> action, RedisKey[] keys = null)
-            where TRes : RedResult
-        {
-            _decompiler.Decompile(action);
-            return null;
-        }
-
-        public async Task<TRes> Execute<TArgs, TRes>(Func<Cursor, RedisKey[], TArgs, TRes> action, TArgs args, RedisKey[] keys = null)
-            where TArgs : struct
+        public async Task<TRes> Execute<TRes>(Func<Cursor, RedisValue[], RedisKey[], TRes> action, RedisValue[] arguments = null, RedisKey[] keys = null)
             where TRes : RedResult
         {
             var decompilation = _decompiler.Decompile(action);
             var redIL = _csharpCompiler.Compile(decompilation);
+
+            var luaCompiler = new LuaCompiler();
+            var lua = luaCompiler.Compile(redIL);
 
             return null;
         }

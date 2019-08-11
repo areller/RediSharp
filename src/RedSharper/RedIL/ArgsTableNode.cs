@@ -8,9 +8,7 @@ namespace RedSharper.RedIL
             : base(RedILNodeType.ArgsTable, DataValueType.Multi)
         { }
 
-        public override void AcceptVisitor<TState>(IRedILVisitor<TState> visitor, TState state)
-        {
-            
-        }
+        public override TReturn AcceptVisitor<TReturn, TState>(IRedILVisitor<TReturn, TState> visitor, TState state)
+            => visitor.VisitArgsTableNode(this, state);
     }
 }

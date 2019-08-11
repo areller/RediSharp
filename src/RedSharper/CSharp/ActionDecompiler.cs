@@ -36,22 +36,7 @@ namespace RedSharper.CSharp
             _decompiler = decompiler;
         }
 
-        public DecompilationResult Decompile<TArgs, TRes>(Func<Cursor, RedisKey[], TArgs, TRes> action)
-            where TArgs : struct
-            where TRes : RedResult
-        {
-            var token = action.Method.MetadataToken;
-            var method = MetadataTokenHelpers.TryAsEntityHandle(token);
-
-            var ast = _decompiler.Decompile(new List<EntityHandle>()
-            {
-                method.Value
-            });
-
-            return ExtractTreeAndMetadata(ast);
-        }
-
-        public DecompilationResult Decompile<TRes>(Func<Cursor, RedisKey[], TRes> action)
+        public DecompilationResult Decompile<TRes>(Func<Cursor, RedisValue[], RedisKey[], TRes> action)
             where TRes : RedResult
         {
             var token = action.Method.MetadataToken;
@@ -67,6 +52,7 @@ namespace RedSharper.CSharp
 
         private DecompilationResult ExtractTreeAndMetadata(SyntaxTree tree)
         {
+            /*
             var firstMethodDeclaration = tree.Children.First(c => c.GetType().Name == typeof(MethodDeclaration).Name) as MethodDeclaration;
             var methodParameters = firstMethodDeclaration.Parameters.ToArray();
 
@@ -89,7 +75,18 @@ namespace RedSharper.CSharp
                 }
             }
 
-            return new DecompilationResult(firstMethodDeclaration.Body, cursorName, argsName, keysName, argsSubKeys);
+            return new DecompilationResult(_rootAssembly, firstMethodDeclaration.Body, cursorName, argsName, keysName, argsSubKeys);
+            */
+            
+            var firstMethodDeclaration = tree.Children.First(c => c.GetType().Name == typeof(MethodDeclaration).Name) as MethodDeclaration;
+            var methodParameters = firstMethodDeclaration.Parameters.ToArray();
+
+            string cursorName = methodParameters[0].Name;
+            string argsName = methodParameters[1].Name;
+            string keysName = methodParameters[2].Name;
+
+            return new DecompilationResult(_rootAssembly, firstMethodDeclaration.Body, cursorName, argsName, keysName,
+                null);
         }
     }
 }
