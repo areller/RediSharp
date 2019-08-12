@@ -37,9 +37,32 @@ return { ok = 'OK' };
 ## TODO List
 
 * Add more Redis commands
-* Add ability to create an manipulate lists/dictionaries
+* Add ability to create and manipulate lists/dictionaries
+* Support more of C#'s syntax
+  * ForEach
+  * Switch/Case
+  * Custom methods (?)
+  * Custom types (structs) (?)
 * Some refactoring
 * Document
+* Write proper unit tests
+
+
+## Source Guide
+
+### Demo
+[RedSharper.Demo](./tests/RedSharper.Demo) is a demo project that utilizes the library.  
+
+### C# Code Decompilation
+RedSharper uses [ILSpy](https://github.com/icsharpcode/ILSpy) to decompile compiled lambda function to a C# syntax tree.  
+See the [CSharp](./src/RedSharper/CSharp) folder. 
+
+### RedIL
+[RedIL](./src/RedSharper/RedIL) is an intermidiate language that is created from C# code, and later compiled to Lua, and potentially other targets in the future (See "Future Plans").  
+
+### Lua Compilation
+Lua is written by traversing the RedIL using an [IRedILVisitor](./src/RedSharper/RedIL/IRedILVisitor.cs).  
+See the [Lua](./src/RedSharper/Lua) folder. 
 
 ## Future Plans
 
