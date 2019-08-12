@@ -14,6 +14,8 @@ namespace RedSharper.Demo
             var connection = await ConnectionMultiplexer.ConnectAsync("localhost");
 
             Client client = new Client(connection.GetDatabase(0));
+            
+            /*
             var res = await client.Execute((cursor, argv, keys) =>
             {
                 var count = cursor.Get(keys[0]).AsInt();
@@ -21,15 +23,31 @@ namespace RedSharper.Demo
 
                 for (var i = 0; i < count; i++)
                 {
-                    var key = keys[0] + i;
+                    var key = keys[0] + "_" + i;
                     var currentValue = cursor.Get(key).AsLong() ?? 0;
                     cursor.Set(key, currentValue + toAdd);
                 }
 
                 return RedResult.Ok;
-            }, new RedisValue[] {5}, new RedisKey[] {"countKey"});
+            }, new RedisValue[] {5}, new RedisKey[] {"countKey"});*/
             
-            Console.WriteLine(res);
+
+            var artifact = client.GetLuaOf((cursor, argv, keys) =>
+            {
+                var count = cursor.Get(keys[0]).AsInt();
+                var toAdd = (int) argv[0];
+
+                for (var i = 0; i < count; i++)
+                {
+                    var key = $"{keys[0]}_{i}";
+                    var currentValue = cursor.Get(key).AsLong() ?? 0;
+                    cursor.Set(key, currentValue + toAdd);
+                }
+
+                return RedResult.Ok;
+            });
+            
+            Console.WriteLine(artifact);
         }
     }
 }

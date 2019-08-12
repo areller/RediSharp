@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using StackExchange.Redis;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
@@ -6,6 +7,7 @@ using RedSharper.CSharp;
 using RedSharper.Contracts;
 using RedSharper.RedIL;
 using System.Diagnostics;
+using System.Reflection.Emit;
 using RedSharper.Lua;
 
 namespace RedSharper
@@ -17,6 +19,8 @@ namespace RedSharper
         private CSharpCompiler _csharpCompiler;
 
         private LuaHandler _luaHandler;
+
+        private ConcurrentDictionary<object, Lazy<RedILNode>> _redILCache;
 
         public Client(IDatabase db)
         {
@@ -31,9 +35,21 @@ namespace RedSharper
             var decompilation = _decompiler.Decompile(action);
             var redIL = _csharpCompiler.Compile(decompilation);
 
-            var handle = await _luaHandler.CreateHandle(redIL);
+            var handle = _luaHandler.CreateHandle(redIL);
+            await handle.Init();
 
             return await handle.Execute<TRes>(arguments, keys);
+        }
+
+        public string GetLuaOf<TRes>(Func<Cursor, RedisValue[], RedisKey[], TRes> action)
+            where TRes : RedResult
+        {
+            var decompilation = _decompiler.Decompile(action);
+            var redIL = _csharpCompiler.Compile(decompilation);
+
+            var handle = _luaHandler.CreateHandle(redIL);
+
+            return handle.Artifact;
         }
     }
 }

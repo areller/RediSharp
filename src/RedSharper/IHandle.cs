@@ -5,8 +5,12 @@ using StackExchange.Redis;
 
 namespace RedSharper
 {
-    interface IHandle : IDisposable
+    interface IHandle<TArtifact> : IDisposable
     {
+        TArtifact Artifact { get; }
+
+        bool IsInitialized { get; }
+
         Task Init();
         
         Task<TRes> Execute<TRes>(RedisValue[] args, RedisKey[] keys)

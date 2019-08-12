@@ -4,7 +4,7 @@ using StackExchange.Redis;
 
 namespace RedSharper.Lua
 {
-    class LuaHandler : IHandler
+    class LuaHandler : IHandler<string>
     {
         private IDatabase _db;
 
@@ -15,13 +15,11 @@ namespace RedSharper.Lua
             _db = db;
             _compiler = new LuaCompiler();
         }
-
-        public async Task<IHandle> CreateHandle(RedILNode redIL)
+        
+        public IHandle<string> CreateHandle(RedILNode redIL)
         {
             var script = _compiler.Compile(redIL);
             var handle = new LuaHandle(_db, script);
-
-            await handle.Init();
 
             return handle;
         }

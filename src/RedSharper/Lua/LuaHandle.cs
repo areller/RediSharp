@@ -8,11 +8,9 @@ using StackExchange.Redis;
 
 namespace RedSharper.Lua
 {
-    class LuaHandle : IHandle, IDisposable
+    class LuaHandle : IHandle<string>, IDisposable
     {
         private IDatabase _db;
-
-        private string _script;
 
         private string _hash;
 
@@ -21,15 +19,21 @@ namespace RedSharper.Lua
             string script)
         {
             _db = db;
-            _script = script;
+            Artifact = script;
+            IsInitialized = false;
         }
+
+        public string Artifact { get; }
+
+        public bool IsInitialized { get; private set; }
 
         public async Task Init()
         {
             var res = await _db.ExecuteAsync("SCRIPT", new
-                List<object>() {"LOAD", _script}).ConfigureAwait(false);
+                List<object>() {"LOAD", Artifact}).ConfigureAwait(false);
 
             _hash = (string) res;
+            IsInitialized = true;
         }
 
         public async Task<TRes> Execute<TRes>(RedisValue[] args, RedisKey[] keys)

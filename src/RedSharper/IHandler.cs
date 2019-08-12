@@ -3,8 +3,8 @@ using RedSharper.RedIL;
 
 namespace RedSharper
 {
-    interface IHandler
+    interface IHandler<TArtifact>
     {
-        Task<IHandle> CreateHandle(RedILNode redIL);
+        IHandle<TArtifact> CreateHandle(RedILNode redIL);
     }
 }
