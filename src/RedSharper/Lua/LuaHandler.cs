@@ -19,7 +19,11 @@ namespace RedSharper.Lua
         public async Task<IHandle> CreateHandle(RedILNode redIL)
         {
             var script = _compiler.Compile(redIL);
-            return new LuaHandle(_db, script);
+            var handle = new LuaHandle(_db, script);
+
+            await handle.Init();
+
+            return handle;
         }
     }
 }

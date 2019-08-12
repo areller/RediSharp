@@ -76,21 +76,18 @@ namespace RedSharper.Lua
 
             public bool VisitBinaryExpressionNode(BinaryExpressionNode node, CompilationState state)
             {
+                if (node.Operator == BinaryExpressionOperator.NullCoalescing) state.Write("(");
                 EncapsulateOrNot(state, node.Left);
                 WriteBinaryOperator(state, node.Operator);
                 EncapsulateOrNot(state, node.Right);
+                if (node.Operator == BinaryExpressionOperator.NullCoalescing) state.Write(")");
                 
                 return true;
             }
 
             public bool VisitBlockNode(BlockNode node, CompilationState state)
             {
-                foreach (var child in node.Children)
-                {
-                    child.AcceptVisitor(this, state);
-                    state.NewLine();
-                }
-
+                WriteLines(state, node.Children.ToArray());
                 return true;
             }
 
@@ -355,6 +352,19 @@ namespace RedSharper.Lua
                 return true;
             }
 
+            private void WriteLines(CompilationState state, RedILNode[] lines, bool firstLine = true)
+            {
+                for (int i = 0; i < lines.Length; i++)
+                {
+                    if (i > 0 || !firstLine)
+                    {
+                        state.NewLine();
+                    }
+
+                    lines[i].AcceptVisitor(this, state);
+                }
+            }
+
             private void WriteArguments(CompilationState state, ExpressionNode[] arguments, bool firstArgument = true)
             {
                 for (var i = 0; i < arguments.Length; i++)
@@ -425,6 +435,9 @@ namespace RedSharper.Lua
                         break;
                     case BinaryExpressionOperator.And:
                         state.Write("and");
+                        break;
+                    case BinaryExpressionOperator.NullCoalescing:
+                        state.Write(" or ");
                         break;
                 }
             }

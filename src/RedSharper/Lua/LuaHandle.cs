@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using RedSharper.Contracts;
@@ -6,11 +8,13 @@ using StackExchange.Redis;
 
 namespace RedSharper.Lua
 {
-    class LuaHandle : IHandle
+    class LuaHandle : IHandle, IDisposable
     {
         private IDatabase _db;
 
         private string _script;
+
+        private string _hash;
 
         public LuaHandle(
             IDatabase db,
@@ -20,10 +24,19 @@ namespace RedSharper.Lua
             _script = script;
         }
 
-        public async Task<TRes> Execute<TRes>(RedisKey[] keys)
+        public async Task Init()
+        {
+            var res = await _db.ExecuteAsync("SCRIPT", new
+                List<object>() {"LOAD", _script}).ConfigureAwait(false);
+
+            _hash = (string) res;
+        }
+
+        public async Task<TRes> Execute<TRes>(RedisValue[] args, RedisKey[] keys)
             where TRes : RedResult
         {
-            var result = await _db.ScriptEvaluateAsync(_script, keys).ConfigureAwait(false);
+            var result = await _db.ExecuteAsync("EVALSHA",
+                new object[] {_hash, keys.Length}.Concat(keys.Select(k => (object)k)).Concat(args.Select(a => (object)a)).ToArray());
             var parsedResult = ParseResult(result);
 
             if (!parsedResult.GetType().Equals(typeof(TRes)))
@@ -62,6 +75,11 @@ namespace RedSharper.Lua
                 case ResultType.SimpleString: return RedResultType.SimpleString;
                 default: return RedResultType.None;
             }
+        }
+
+        public void Dispose()
+        {
+            ;
         }
     }
 }

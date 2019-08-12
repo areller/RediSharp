@@ -170,6 +170,10 @@ namespace RedSharper.RedIL
                         return new BinaryExpressionNode(DataValueType.Integer, op, left, right);
                     }
                 }
+                else if (op == BinaryExpressionOperator.NullCoalescing)
+                {
+                    return new BinaryExpressionNode(left.DataType, op, left, right);
+                }
 
                 throw new RedILException($"Unsupported operator '{op}' with data types '{left.DataType}' and '{right.DataType}'");
             }
@@ -413,6 +417,16 @@ namespace RedSharper.RedIL
 
             public RedILNode VisitIdentifierExpression(IdentifierExpression identifierExpression, State data)
             {
+                // Is Keys or Args
+                if (identifierExpression.Identifier == _csharp.ArgumentsVariableName)
+                {
+                    return new ArgsTableNode();
+                }
+                else if (identifierExpression.Identifier == _csharp.KeysVariableName)
+                {
+                    return new KeysTableNode();
+                }
+                
                 //TOOD: What is the difference between this and identifier?
                 var resType = DataValueType.Unknown;
                 var ilResolveResult = identifierExpression.Annotations.Where(annot => annot is ILVariableResolveResult)
@@ -440,7 +454,7 @@ namespace RedSharper.RedIL
                 var ifTrue = ifElseStatement.TrueStatement.AcceptVisitor(this, data.NewState(ifElseStatement));
                 var ifFalse = ifElseStatement.FalseStatement.AcceptVisitor(this, data.NewState(ifElseStatement));
                 
-                return new IfNode(condition, ifTrue, ifFalse);
+                return new IfNode(condition, ifTrue is NilNode ? null : ifTrue, ifFalse is NilNode ? null : ifFalse);
             }
 
             public RedILNode VisitIndexerDeclaration(IndexerDeclaration indexerDeclaration, State data)
@@ -454,6 +468,21 @@ namespace RedSharper.RedIL
                 foreach (var arg in indexerExpression.Arguments)
                 {
                     var argVisited = CastUtilities.CastRedILNode<ExpressionNode>(arg.AcceptVisitor(this, data.NewState(indexerExpression)));
+
+                    // In LUA, array indices start at 1
+                    if (argVisited.DataType == DataValueType.Integer)
+                    {
+                        if (argVisited.Type == RedILNodeType.Constant)
+                        {
+                            argVisited = new ConstantValueNode(DataValueType.Integer,
+                                int.Parse(((ConstantValueNode) argVisited).Value.ToString()) + 1);
+                        }
+                        else
+                        {
+                            argVisited = new BinaryExpressionNode(DataValueType.Integer, BinaryExpressionOperator.Add, argVisited, new ConstantValueNode(DataValueType.Integer, 1));
+                        }
+                    }
+                    
                     target = new TableKeyAccessNode(target, argVisited);
                 }
 
@@ -544,6 +573,12 @@ namespace RedSharper.RedIL
                             return new CallRedisMethodNode(RedisCommand.HMGet, cmdArgs);
                         case "CursorExtensions.HSet":
                             return new CallRedisMethodNode(RedisCommand.Set, cmdArgs);
+                        case "RedSingleResultExtensions.AsInt":
+                            return new CastNode(DataValueType.Integer, args.First());
+                        case "RedSingleResultExtensions.AsLong":
+                            return new CastNode(DataValueType.Integer, args.First());
+                        case "RedSingleResultExtensions.AsDouble":
+                            return new CastNode(DataValueType.Float, args.First());
                         default:
                             throw new RedILException($"Unsupported Redis method '{memberReference.MemberName}'");
                     }

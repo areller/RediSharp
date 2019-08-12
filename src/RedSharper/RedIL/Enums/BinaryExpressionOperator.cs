@@ -15,6 +15,7 @@ namespace RedSharper.RedIL.Enums
         LessEqual,
         GreaterEqual,
         Or,
-        And
+        And,
+        NullCoalescing
     }
 }

@@ -16,10 +16,13 @@ namespace RedSharper
 
         private CSharpCompiler _csharpCompiler;
 
-        public Client(IConnectionMultiplexer connection)
+        private LuaHandler _luaHandler;
+
+        public Client(IDatabase db)
         {
             _decompiler = new ActionDecompiler();
             _csharpCompiler = new CSharpCompiler();
+            _luaHandler = new LuaHandler(db);
         }
 
         public async Task<TRes> Execute<TRes>(Func<Cursor, RedisValue[], RedisKey[], TRes> action, RedisValue[] arguments = null, RedisKey[] keys = null)
@@ -28,10 +31,9 @@ namespace RedSharper
             var decompilation = _decompiler.Decompile(action);
             var redIL = _csharpCompiler.Compile(decompilation);
 
-            var luaCompiler = new LuaCompiler();
-            var lua = luaCompiler.Compile(redIL);
+            var handle = await _luaHandler.CreateHandle(redIL);
 
-            return null;
+            return await handle.Execute<TRes>(arguments, keys);
         }
     }
 }
