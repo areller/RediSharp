@@ -12,7 +12,7 @@ namespace RedSharper.RedIL
                 { RedisCommand.Get, DataValueType.String },
                 { RedisCommand.Set, DataValueType.Boolean },
                 { RedisCommand.HGet, DataValueType.String },
-                { RedisCommand.HMGet, DataValueType.Multi },
+                { RedisCommand.HMGet, DataValueType.Array },
                 { RedisCommand.HSet, DataValueType.Boolean }
             };
 

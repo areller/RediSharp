@@ -441,7 +441,8 @@ namespace RedSharper.RedIL
                     }
                     else
                     {
-                        resType = DataValueType.Multi;
+                        //TODO: Handle list/dictionary types
+                        resType = DataValueType.Array;
                     }
                 }
                 
@@ -470,7 +471,7 @@ namespace RedSharper.RedIL
                     var argVisited = CastUtilities.CastRedILNode<ExpressionNode>(arg.AcceptVisitor(this, data.NewState(indexerExpression)));
 
                     // In LUA, array indices start at 1
-                    if (argVisited.DataType == DataValueType.Integer)
+                    if (target.DataType == DataValueType.Array && argVisited.DataType == DataValueType.Integer)
                     {
                         if (argVisited.Type == RedILNodeType.Constant)
                         {

@@ -7,6 +7,7 @@ namespace RedSharper.RedIL.Enums
         Float,
         String,
         Boolean,
-        Multi
+        Array,
+        Dictionary
     }
 }
