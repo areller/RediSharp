@@ -34,6 +34,12 @@ end
 return { ok = 'OK' };
 ```
 
+## Why?
+
+When we execute Lua scripts from C#, we lose a lot of the advanges that the C# compiler and the IDE offer, such as auto completion, compile-time error checking, debugging, and many more.  
+
+RedSharper aims to mitigate these issues.  
+
 ## TODO List
 
 * Add more Redis commands
