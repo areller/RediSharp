@@ -46,6 +46,7 @@ return { ok = 'OK' };
 * Some refactoring
 * Document
 * Write proper unit tests
+* Add debugging support
 
 
 ## Source Guide
