@@ -64,6 +64,10 @@ See the [CSharp](./src/RedSharper/CSharp) folder.
 Lua is written by traversing the RedIL using an [IRedILVisitor](./src/RedSharper/RedIL/IRedILVisitor.cs).  
 See the [Lua](./src/RedSharper/Lua) folder. 
 
+## Dependencies
+* [ILSpy](https://github.com/icsharpcode/ILSpy) - MIT License
+* [StackExchange.Redis](https://github.com/StackExchange/StackExchange.Redis) - MIT License
+
 ## Future Plans
 
 * Transpiling C# Code directly to C code that will run as a Redis module.
