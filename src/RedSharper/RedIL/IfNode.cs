@@ -4,7 +4,7 @@ namespace RedSharper.RedIL
 {
     class IfNode : RedILNode
     {
-        public RedILNode Condition { get; set; }
+        public ExpressionNode Condition { get; set; }
 
         public RedILNode IfTrue { get; set; }
 
@@ -13,7 +13,7 @@ namespace RedSharper.RedIL
         public IfNode() : base(RedILNodeType.If) { }
 
         public IfNode(
-            RedILNode condition,
+            ExpressionNode condition,
             RedILNode ifTrue,
             RedILNode ifFalse)
             : base(RedILNodeType.If)

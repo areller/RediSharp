@@ -6,8 +6,8 @@ namespace RedSharper.RedIL
     {
         public ExpressionNode Argument { get; set; }
 
-        public CastNode()
-            : base(RedILNodeType.Cast)
+        public CastNode(DataValueType toType)
+            : base(RedILNodeType.Cast, toType)
         { }
 
         public CastNode(DataValueType toType, ExpressionNode arg)

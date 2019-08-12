@@ -129,6 +129,8 @@ namespace RedSharper.RedIL.Utilities
 
         public static DataValueType GetValueType(Type type)
         {
+            type = GetNullableUnderlyingType(type);
+            
             if (IsIntegerType(type))
                 return DataValueType.Integer;
             else if (IsFloatType(type))
@@ -153,6 +155,17 @@ namespace RedSharper.RedIL.Utilities
                 return DataValueType.String;
 
             return DataValueType.Unknown;
+        }
+
+        private static Type GetNullableUnderlyingType(Type type)
+        {
+            var underlying = Nullable.GetUnderlyingType(type);
+            if (underlying is null)
+            {
+                return type;
+            }
+
+            return underlying;
         }
     }
 }

@@ -24,6 +24,7 @@ namespace RedSharper.RedIL.Enums
         DoWhile,
         While,
         Status,
-        CallLuaMethod
+        CallLuaMethod,
+        Continue
     }
 }
