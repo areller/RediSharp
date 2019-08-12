@@ -43,11 +43,6 @@ namespace RedSharper.Lua
                 new object[] {_hash, keys.Length}.Concat(keys.Select(k => (object)k)).Concat(args.Select(a => (object)a)).ToArray());
             var parsedResult = ParseResult(result);
 
-            if (!parsedResult.GetType().Equals(typeof(TRes)))
-            {
-                throw new LuaMismatchReturnTypeException(typeof(TRes), parsedResult.GetType());
-            }
-
             return (TRes)parsedResult;
         }
 
@@ -55,10 +50,11 @@ namespace RedSharper.Lua
         {
             switch (nativeRedisResult.Type)
             {
-                case ResultType.Error: 
-                    return new RedErrorResult(nativeRedisResult.ToString());
-                case ResultType.Integer:
+                case ResultType.Error:
+                    return new RedStatusResult(true, nativeRedisResult.ToString());
                 case ResultType.SimpleString:
+                    return new RedStatusResult(false, nativeRedisResult.ToString());
+                case ResultType.Integer:
                 case ResultType.BulkString:
                     return new RedSingleResult((RedisValue)nativeRedisResult, ParseResultType(nativeRedisResult.Type));
                 case ResultType.MultiBulk:

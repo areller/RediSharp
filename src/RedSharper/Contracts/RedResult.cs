@@ -1,15 +1,20 @@
 using System;
 using RedSharper.Contracts.Enums;
+using RedSharper.RedIL.Attributes;
 using StackExchange.Redis;
 
 namespace RedSharper.Contracts
 {
     public abstract class RedResult
     {
-        public abstract RedResultType Type { get; }
+        internal abstract RedResultType Type { get; }
 
-        public abstract bool IsNull { get; }
+        internal abstract bool IsNull { get; }
 
-        public static RedResult Ok => new RedErrorResult(null);
+        [RedILResolve(typeof(OkStatusResolver))]
+        public static RedStatusResult Ok => new RedStatusResult(false, "OK");
+        
+        [RedILResolve(typeof(ErrorStatusResolver))]
+        public static RedStatusResult Error(string message = null) => new RedStatusResult(true, message);
     }
 }

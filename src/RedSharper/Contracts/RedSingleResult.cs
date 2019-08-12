@@ -7,7 +7,7 @@ namespace RedSharper.Contracts
     public class RedSingleResult : RedResult
     {
         private readonly RedisValue _value;
-        public override RedResultType Type { get; }
+        internal override RedResultType Type { get; }
 
         public RedSingleResult(RedisValue value, RedResultType? resultType)
         {
@@ -15,7 +15,7 @@ namespace RedSharper.Contracts
             Type = resultType ?? (value.IsInteger ? RedResultType.Integer : RedResultType.BulkString);
         }
 
-        public override bool IsNull => _value.IsNull;
+        internal override bool IsNull => _value.IsNull;
 
         public override string ToString() => _value.ToString();
 

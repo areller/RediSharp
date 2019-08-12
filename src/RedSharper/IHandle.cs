@@ -1,14 +1,11 @@
-using System;
 using System.Threading.Tasks;
 using RedSharper.Contracts;
 using StackExchange.Redis;
 
 namespace RedSharper
 {
-    interface IHandle<TArtifact> : IDisposable
+    public interface IHandle
     {
-        TArtifact Artifact { get; }
-
         bool IsInitialized { get; }
 
         Task Init();

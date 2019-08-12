@@ -99,7 +99,7 @@ namespace RedSharper.Lua
 
             public bool VisitCallRedisMethodNode(CallRedisMethodNode node, CompilationState state)
             {
-                state.Write("redis.call('");
+                state.Write("redis.pcall('");
                 switch (node.Method)
                 {
                     case RedisCommand.Get:
@@ -263,10 +263,9 @@ namespace RedSharper.Lua
                         state.Write(" }");
                         break;
                     case Status.Error:
-                        var errorMsg = node.Error ?? "Error";
                         state.Write("{ ");
                         state.Write("err = ");
-                        state.Write($"'{errorMsg}'");
+                        (node.Error ?? new ConstantValueNode(DataValueType.String, "Error")).AcceptVisitor(this, state);
                         state.Write(" }");
                         break;
                 }

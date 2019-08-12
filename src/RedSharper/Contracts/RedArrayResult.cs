@@ -6,10 +6,10 @@ namespace RedSharper.Contracts
 { 
     public class RedArrayResult : RedResult
     {
-        public override bool IsNull => _value == null;
+        internal override bool IsNull => _value == null;
         private readonly RedResult[] _value;
 
-        public override RedResultType Type => RedResultType.MultiBulk;
+        internal override RedResultType Type => RedResultType.MultiBulk;
         public RedArrayResult(RedResult[] value)
         {
             _value = value;

@@ -6,14 +6,14 @@ namespace RedSharper.RedIL
     {
         public Status Status { get; set; }
 
-        public string Error { get; set; }
+        public ExpressionNode Error { get; set; }
 
         public StatusNode()
             : base(RedILNodeType.Status)
         {
         }
 
-        public StatusNode(Status status, string error = null)
+        public StatusNode(Status status, ExpressionNode error = null)
             : base(RedILNodeType.Status)
         {
             Status = status;

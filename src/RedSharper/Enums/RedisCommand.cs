@@ -1,11 +1,11 @@
 namespace RedSharper.Enums
 {
-    public enum RedisCommand
+    public enum RedisCommand : int
     {
-        Get,
-        Set,
-        HGet,
-        HSet,
-        HMGet
+        Get = 0,
+        Set = 1,
+        HGet = 2,
+        HSet = 3,
+        HMGet = 4
     }
 }

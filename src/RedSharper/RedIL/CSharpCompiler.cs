@@ -1,22 +1,31 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using ICSharpCode.Decompiler.CSharp.Syntax;
 using ICSharpCode.Decompiler.CSharp.Syntax.PatternMatching;
 using RedSharper.CSharp;
 using RedSharper.RedIL.Enums;
 using RedSharper.RedIL.Utilities;
 using System.Linq;
+using System.Reflection;
 using ICSharpCode.Decompiler.CSharp;
+using ICSharpCode.Decompiler.CSharp.Resolver;
+using ICSharpCode.Decompiler.Semantics;
 using ICSharpCode.Decompiler.TypeSystem;
 using RedSharper.Contracts;
 using RedSharper.Enums;
 using RedSharper.Extensions;
+using RedSharper.RedIL.Attributes;
+using RedSharper.RedIL.ExternalResolvers;
+using RedSharper.RedIL.ExternalResolvers.Enums;
 using Attribute = ICSharpCode.Decompiler.CSharp.Syntax.Attribute;
 
 namespace RedSharper.RedIL
 {
     class CSharpCompiler
     {
+        private ExternalResolversDictionary _externalResolvers;
+        
         class State
         {
             public AstNode LastIterativeNode { get; set; }
@@ -56,10 +65,13 @@ namespace RedSharper.RedIL
 
         class AstVisitor : IAstVisitor<State, RedILNode>
         {
+            private CSharpCompiler _compiler;
+            
             private DecompilationResult _csharp;
 
-            public AstVisitor(DecompilationResult csharp)
+            public AstVisitor(CSharpCompiler compiler, DecompilationResult csharp)
             {
+                _compiler = compiler;
                 _csharp = csharp;
             }
 
@@ -516,78 +528,63 @@ namespace RedSharper.RedIL
             public RedILNode VisitInvocationExpression(InvocationExpression invocationExpression, State data)
             {
                 var memberReference = invocationExpression.Target as MemberReferenceExpression;
-                if (memberReference == null)
+                if (memberReference is null)
                 {
-                    throw new RedILException("Invocation can only be made from a member reference");
+                    throw new RedILException("Invocation is only possible by a member reference");
                 }
 
-                var targetType = memberReference.Target as TypeReferenceExpression;
-                if (targetType == null)
+                var isStatic = memberReference.Target is TypeReferenceExpression;
+                
+                var resolveResult =
+                    invocationExpression.Annotations.FirstOrDefault(annot => annot is CSharpInvocationResolveResult) as
+                        CSharpInvocationResolveResult;
+                if (resolveResult is null)
                 {
-                    throw new RedILException("Invocation can only be made from a static type reference");
+                    throw new RedILException($"Unable to find member resolve annotation");
+                }
+                
+                //TODO: Consider caching
+                var targetType = Type.GetType(resolveResult.TargetResult.Type.ReflectionName);
+                var method = targetType.GetMethod(memberReference.MemberName,
+                    (isStatic ? BindingFlags.Static : BindingFlags.Instance) | BindingFlags.Public);
+                
+                if (method is null)
+                {
+                    throw new RedILException(
+                        $"Unable to find '{memberReference.MemberName}' member in '{resolveResult.TargetResult.Type.ReflectionName}'");
                 }
 
-                var args = new List<ExpressionNode>();
-                foreach (var arg in invocationExpression.Arguments)
+                var redILResolveAttribute = method.CustomAttributes
+                    .FirstOrDefault(attr => attr.AttributeType == typeof(RedILResolve));
+                
+                RedILResolver resolver;
+                if (redILResolveAttribute is null)
                 {
-                    var argVisited = CastUtilities.CastRedILNode<ExpressionNode>(arg.AcceptVisitor(this, data.NewState(invocationExpression)));
-                    args.Add(argVisited);
-                }
+                    resolver = _compiler._externalResolvers.FindResolver(resolveResult.TargetResult.Type.ReflectionName,
+                        resolveResult.TargetResult.Type.FullName, memberReference.MemberName,
+                        EntryType.Method);
 
-                if (targetType.Type is PrimitiveType)
-                {
-                    var primitiveType = targetType.Type as PrimitiveType;
-                    switch ($"{primitiveType.Keyword}.{memberReference.MemberName}")
+                    if (resolver is null)
                     {
-                        case "int.Parse":
-                        case "long.Parse":
-                            return new CastNode(DataValueType.Integer, args.First());
-                        case "double.Parse":
-                        case "decimal.Parse":
-                        case "float.Parse":
-                            return new CastNode(DataValueType.Float, args.First());
-                        case "bool.Parse":
-                            return new BinaryExpressionNode(
-                                DataValueType.Boolean,
-                                BinaryExpressionOperator.Equal,
-                                new CallLuaMethodNode(LuaMethod.StringToLower, new ExpressionNode[] {args.First()}),
-                                new ConstantValueNode(DataValueType.String, "true"));
-                        default:
-                            throw new RedILException(
-                                $"Invalid primitive type invocation '{primitiveType.Keyword}.{memberReference.MemberName}'");
-                    }
-                }
-                else if (targetType.Type is SimpleType)
-                {
-                    var simpleType = targetType.Type as SimpleType;
-                    var cmdArgs = args.Skip(1).ToArray();
-                    
-                    switch ($"{simpleType.Identifier}.{memberReference.MemberName}")
-                    {
-                        case "CursorExtensions.Get":
-                            return new CallRedisMethodNode(RedisCommand.Get, cmdArgs);
-                        case "CursorExtensions.Set":
-                            return new CallRedisMethodNode(RedisCommand.Set, cmdArgs);
-                        case "CursorExtensions.HGet":
-                            return new CallRedisMethodNode(RedisCommand.HGet, cmdArgs);
-                        case "CursorExtensions.HMGet":
-                            return new CallRedisMethodNode(RedisCommand.HMGet, cmdArgs);
-                        case "CursorExtensions.HSet":
-                            return new CallRedisMethodNode(RedisCommand.Set, cmdArgs);
-                        case "RedSingleResultExtensions.AsInt":
-                            return new CastNode(DataValueType.Integer, args.First());
-                        case "RedSingleResultExtensions.AsLong":
-                            return new CastNode(DataValueType.Integer, args.First());
-                        case "RedSingleResultExtensions.AsDouble":
-                            return new CastNode(DataValueType.Float, args.First());
-                        default:
-                            throw new RedILException($"Unsupported Redis method '{memberReference.MemberName}'");
+                        throw new RedILException($"Could not find resolver for '{memberReference.MemberName}' of '{resolveResult.TargetResult.Type.ReflectionName}'");
                     }
                 }
                 else
                 {
-                    throw new RedILException($"Invalid type '{targetType.Type.GetType().Name}' for invocation");
+                    var resolverTypeArg = redILResolveAttribute.ConstructorArguments.First().Value;
+                    var resolverCustomArgs =
+                        (redILResolveAttribute.ConstructorArguments.Skip(1).First().Value as
+                            ReadOnlyCollection<CustomAttributeTypedArgument>).Select(arg => arg.Value).ToArray();
+                    var resolve = Activator.CreateInstance(redILResolveAttribute.AttributeType, resolverTypeArg, resolverCustomArgs) as RedILResolve;
+                    resolver = resolve.CreateResolver();
                 }
+                
+                var target = isStatic ? null : CastUtilities.CastRedILNode<ExpressionNode>(memberReference.Target.AcceptVisitor(this, data.NewState(invocationExpression)));
+                var arguments = invocationExpression.Arguments.Select(arg =>
+                    CastUtilities.CastRedILNode<ExpressionNode>(arg.AcceptVisitor(this,
+                        data.NewState(invocationExpression)))).ToArray();
+
+                return resolver.Resolve(null, target, arguments);
             }
 
             public RedILNode VisitIsExpression(IsExpression isExpression, State data)
@@ -613,27 +610,56 @@ namespace RedSharper.RedIL
             public RedILNode VisitMemberReferenceExpression(MemberReferenceExpression memberReferenceExpression, State data)
             {
                 //Note: this handles explicit member references, invocations are handled solly by VisitInvocationExpression
-                var typeName = ((memberReferenceExpression.Target as TypeReferenceExpression)?.Type as SimpleType)
-                    ?.Identifier;
-                if (typeName == null)
+                var isStatic = memberReferenceExpression.Target is TypeReferenceExpression;
+
+                var resolveResult =
+                    memberReferenceExpression.Annotations.FirstOrDefault(annot => annot is MemberResolveResult) as
+                        MemberResolveResult;
+                if (resolveResult is null)
                 {
-                    throw new RedILException($"Only static classes members are supported");
+                    throw new RedILException($"Unable to find member resolve annotation");
                 }
 
-                switch (typeName)
+                //TODO: Consider caching
+                var targetType = Type.GetType(resolveResult.TargetResult.Type.ReflectionName);
+                var members = targetType.GetMember(memberReferenceExpression.MemberName,
+                    (isStatic ? BindingFlags.Static : BindingFlags.Instance) | BindingFlags.Public);
+
+                var member = members.FirstOrDefault();
+                if (member is null)
                 {
-                    case nameof(RedResult):
-                    {
-                        switch (memberReferenceExpression.MemberName)
-                        {
-                            case nameof(RedResult.Ok):
-                                return new StatusNode(Status.Ok);
-                            default: throw new RedILException($"Unsupported member '{memberReferenceExpression.MemberName}' in '{typeName}'");
-                        }
-                        break;
-                    }
-                    default: throw new RedILException($"Unsupported static type '{typeName}'");
+                    throw new RedILException(
+                        $"Unable to find '{memberReferenceExpression.MemberName}' member in '{resolveResult.TargetResult.Type.ReflectionName}'");
                 }
+
+                var redILResolveAttribute = member.CustomAttributes
+                    .FirstOrDefault(attr => attr.AttributeType == typeof(RedILResolve));
+
+                RedILResolver resolver;
+                if (redILResolveAttribute is null)
+                {
+                    resolver = _compiler._externalResolvers.FindResolver(resolveResult.TargetResult.Type.ReflectionName,
+                        resolveResult.TargetResult.Type.FullName, memberReferenceExpression.MemberName,
+                        EntryType.Member);
+
+                    if (resolver is null)
+                    {
+                        throw new RedILException($"Could not find resolver for '{memberReferenceExpression.MemberName}' of '{resolveResult.TargetResult.Type.ReflectionName}'");
+                    }
+                }
+                else
+                {
+                    var resolverTypeArg = redILResolveAttribute.ConstructorArguments.First().Value;
+                    var resolverCustomArgs =
+                        (redILResolveAttribute.ConstructorArguments.Skip(1).First().Value as
+                            ReadOnlyCollection<CustomAttributeTypedArgument>).Select(arg => arg.Value).ToArray();
+                    var resolve = Activator.CreateInstance(redILResolveAttribute.AttributeType, resolverTypeArg, resolverCustomArgs) as RedILResolve;
+                    resolver = resolve.CreateResolver();
+                }
+                
+                var target = isStatic ? null : CastUtilities.CastRedILNode<ExpressionNode>(memberReferenceExpression.Target.AcceptVisitor(this, data.NewState(memberReferenceExpression)));
+
+                return resolver.Resolve(null, target, null);
             }
 
             public RedILNode VisitMemberType(MemberType memberType, State data)
@@ -1000,7 +1026,12 @@ namespace RedSharper.RedIL
             }
         }
 
+        public CSharpCompiler()
+        {
+            _externalResolvers = new ExternalResolversDictionary();
+        }
+        
         public RedILNode Compile(DecompilationResult csharp)
-            => csharp.Body.AcceptVisitor(new AstVisitor(csharp), new State());
+            => csharp.Body.AcceptVisitor(new AstVisitor(this, csharp), new State());
     }
 }
