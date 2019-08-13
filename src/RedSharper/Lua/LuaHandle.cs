@@ -8,7 +8,8 @@ using StackExchange.Redis;
 
 namespace RedSharper.Lua
 {
-    class LuaHandle : IHandle<string>, IDisposable
+    class LuaHandle<TRes> : IHandle<string, TRes>, IDisposable
+        where TRes : RedResult
     {
         private IDatabase _db;
 
@@ -36,8 +37,7 @@ namespace RedSharper.Lua
             IsInitialized = true;
         }
 
-        public async Task<TRes> Execute<TRes>(RedisValue[] args, RedisKey[] keys)
-            where TRes : RedResult
+        public async Task<TRes> Execute(RedisValue[] args, RedisKey[] keys)
         {
             var result = await _db.ExecuteAsync("EVALSHA",
                 new object[] {_hash, keys.Length}.Concat(keys.Select(k => (object)k)).Concat(args.Select(a => (object)a)).ToArray());

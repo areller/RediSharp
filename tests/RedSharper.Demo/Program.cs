@@ -56,7 +56,7 @@ namespace RedSharper.Demo
             var connection = await ConnectionMultiplexer.ConnectAsync("localhost");
 
             Client client = new Client(connection.GetDatabase(0));
-            var handle = client.GetHandleWithArtifact<RedStatusResult, string>(RedisFunction);
+            var handle = client.GetLuaHandle(RedisFunction);
 
             // Printing Lua
             Console.WriteLine("===========================");
@@ -64,7 +64,7 @@ namespace RedSharper.Demo
             Console.WriteLine("===========================");
 
             await handle.Init();
-            var res = await handle.Execute<RedStatusResult>(new RedisValue[] {5}, new RedisKey[] {"countKey"});
+            var res = await handle.Execute(new RedisValue[] {5}, new RedisKey[] {"countKey"});
             Console.WriteLine(res.IsOk);
         }
     }

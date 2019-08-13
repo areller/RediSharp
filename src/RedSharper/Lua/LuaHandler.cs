@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using RedSharper.Contracts;
 using RedSharper.RedIL;
 using StackExchange.Redis;
 
@@ -16,10 +17,11 @@ namespace RedSharper.Lua
             _compiler = new LuaCompiler();
         }
         
-        public IHandle<string> CreateHandle(RedILNode redIL)
+        public IHandle<string, TRes> CreateHandle<TRes>(RedILNode redIL)
+            where TRes : RedResult
         {
             var script = _compiler.Compile(redIL);
-            var handle = new LuaHandle(_db, script);
+            var handle = new LuaHandle<TRes>(_db, script);
 
             return handle;
         }

@@ -33,23 +33,23 @@ namespace RedSharper
             where TRes : RedResult
         {
             var handle = await GetInitializedHandle(action);
-            var res = await handle.Execute<TRes>(arguments, keys);
+            var res = await handle.Execute(arguments, keys);
 
             return res;
         }
 
-        public IHandle GetHandle<TRes>(Func<ICursor, RedisValue[], RedisKey[], TRes> action)
+        public IHandle<TRes> GetHandle<TRes>(Func<ICursor, RedisValue[], RedisKey[], TRes> action)
             where TRes : RedResult
         {
             var decompilation = _decompiler.Decompile(action);
             var redIL = _csharpCompiler.Compile(decompilation);
 
-            var handle = _luaHandler.CreateHandle(redIL);
+            var handle = _luaHandler.CreateHandle<TRes>(redIL);
 
             return handle;
         }
 
-        public IHandle<TArtifact> GetHandleWithArtifact<TRes, TArtifact>(Func<ICursor, RedisValue[], RedisKey[], TRes> action)
+        public IHandle<TArtifact, TRes> GetHandleWithArtifact<TRes, TArtifact>(Func<ICursor, RedisValue[], RedisKey[], TRes> action)
             where TRes : RedResult
         {
             var decompilation = _decompiler.Decompile(action);
@@ -57,10 +57,19 @@ namespace RedSharper
 
             var handler = SelectHandler<TArtifact>();
 
-            return handler.CreateHandle(redIL);
+            return handler.CreateHandle<TRes>(redIL);
         }
 
-        public async Task<IHandle> GetInitializedHandle<TRes>(Func<ICursor, RedisValue[], RedisKey[], TRes> action)
+        public IHandle<string, TRes> GetLuaHandle<TRes>(Func<ICursor, RedisValue[], RedisKey[], TRes> action)
+            where TRes : RedResult
+        {
+            var decompilation = _decompiler.Decompile(action);
+            var redIL = _csharpCompiler.Compile(decompilation);
+
+            return _luaHandler.CreateHandle<TRes>(redIL);
+        }
+
+        public async Task<IHandle<TRes>> GetInitializedHandle<TRes>(Func<ICursor, RedisValue[], RedisKey[], TRes> action)
             where TRes : RedResult
         {
             var handle = GetHandle(action);
