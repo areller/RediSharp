@@ -15,7 +15,6 @@ using ICSharpCode.Decompiler.Semantics;
 using ICSharpCode.Decompiler.TypeSystem;
 using RedSharper.Contracts;
 using RedSharper.Enums;
-using RedSharper.Extensions;
 using RedSharper.RedIL.Attributes;
 using RedSharper.RedIL.ExternalResolvers;
 using RedSharper.RedIL.ExternalResolvers.Enums;
@@ -455,6 +454,10 @@ namespace RedSharper.RedIL
                 {
                     return new KeysTableNode();
                 }
+                else if (identifierExpression.Identifier == _csharp.CursorVariableName)
+                {
+                    return new CursorNode();
+                }
                 
                 //TOOD: What is the difference between this and identifier?
                 var resType = DataValueType.Unknown;
@@ -723,7 +726,7 @@ namespace RedSharper.RedIL
 
             public RedILNode VisitNullReferenceExpression(NullReferenceExpression nullReferenceExpression, State data)
             {
-                throw new System.NotImplementedException();
+                return new NilNode();
             }
 
             public RedILNode VisitObjectCreateExpression(ObjectCreateExpression objectCreateExpression, State data)
@@ -1052,6 +1055,7 @@ namespace RedSharper.RedIL
                 throw new System.NotImplementedException();
             }
 
+            //TODO: This covers the cases I've seen so far, might have to rewrite it to a more general version that would remove all instances of `continue`
             private BlockNode RemoveFirstLevelContinue(BlockNode node, State state)
             {
                 var newBlock = new BlockNode();

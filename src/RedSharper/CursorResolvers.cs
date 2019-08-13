@@ -17,7 +17,7 @@ namespace RedSharper
         
         public override ExpressionNode Resolve(IExpressionVisitor visitor, ExpressionNode caller, ExpressionNode[] arguments)
         {
-            return new CallRedisMethodNode(_cmd, arguments.Skip(1).ToArray());
+            return new CallRedisMethodNode(_cmd, caller, arguments.ToArray());
         }
     }
 }

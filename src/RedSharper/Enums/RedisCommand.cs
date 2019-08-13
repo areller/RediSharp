@@ -6,6 +6,7 @@ namespace RedSharper.Enums
         Set = 1,
         HGet = 2,
         HSet = 3,
-        HMGet = 4
+        HMGet = 4,
+        HGetAll = 5
     }
 }

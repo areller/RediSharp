@@ -29,7 +29,7 @@ namespace RedSharper
             _luaHandler = new LuaHandler(db);
         }
 
-        public async Task<TRes> Execute<TRes>(Func<Cursor, RedisValue[], RedisKey[], TRes> action, RedisValue[] arguments = null, RedisKey[] keys = null)
+        public async Task<TRes> Execute<TRes>(Func<ICursor, RedisValue[], RedisKey[], TRes> action, RedisValue[] arguments = null, RedisKey[] keys = null)
             where TRes : RedResult
         {
             var handle = await GetInitializedHandle(action);
@@ -38,7 +38,7 @@ namespace RedSharper
             return res;
         }
 
-        public IHandle GetHandle<TRes>(Func<Cursor, RedisValue[], RedisKey[], TRes> action)
+        public IHandle GetHandle<TRes>(Func<ICursor, RedisValue[], RedisKey[], TRes> action)
             where TRes : RedResult
         {
             var decompilation = _decompiler.Decompile(action);
@@ -49,7 +49,7 @@ namespace RedSharper
             return handle;
         }
 
-        public IHandle<TArtifact> GetHandleWithArtifact<TRes, TArtifact>(Func<Cursor, RedisValue[], RedisKey[], TRes> action)
+        public IHandle<TArtifact> GetHandleWithArtifact<TRes, TArtifact>(Func<ICursor, RedisValue[], RedisKey[], TRes> action)
             where TRes : RedResult
         {
             var decompilation = _decompiler.Decompile(action);
@@ -60,7 +60,7 @@ namespace RedSharper
             return handler.CreateHandle(redIL);
         }
 
-        public async Task<IHandle> GetInitializedHandle<TRes>(Func<Cursor, RedisValue[], RedisKey[], TRes> action)
+        public async Task<IHandle> GetInitializedHandle<TRes>(Func<ICursor, RedisValue[], RedisKey[], TRes> action)
             where TRes : RedResult
         {
             var handle = GetHandle(action);

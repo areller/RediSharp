@@ -49,5 +49,7 @@ namespace RedSharper.RedIL
         TReturn VisitWhileNode(WhileNode node, TState state);
 
         TReturn VisitCallLuaMethodNode(CallLuaMethodNode node, TState state);
+
+        TReturn VisitCursorNode(CursorNode node, TState state);
     }
 }

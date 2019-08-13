@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using ICSharpCode.Decompiler.IL;
 using RedSharper.Enums;
 using RedSharper.RedIL.Enums;
 
@@ -18,16 +19,20 @@ namespace RedSharper.RedIL
 
         public RedisCommand Method { get; set; }
 
+        public ExpressionNode Caller { get; set; }
+
         public ExpressionNode[] Arguments { get; set; }
 
         public CallRedisMethodNode() : base(RedILNodeType.CallRedisMethod) { }
 
         public CallRedisMethodNode(
             RedisCommand method,
+            ExpressionNode caller,
             ExpressionNode[] arguments)
             : base(RedILNodeType.CallRedisMethod, CommandTypeTable[method])
         {
             Method = method;
+            Caller = caller;
             Arguments = arguments;
         }
 

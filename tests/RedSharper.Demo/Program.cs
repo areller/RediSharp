@@ -2,17 +2,15 @@
 using System.Threading.Tasks;
 using RedSharper.Contracts;
 using RedSharper.Contracts.Extensions;
-using RedSharper.Extensions;
 using StackExchange.Redis;
 
 namespace RedSharper.Demo
 {
     class Program
     {
-        
-        static RedStatusResult RedisFunction(Cursor cursor, RedisValue[] args, RedisKey[] keys)
+        static RedStatusResult RedisFunction(ICursor cursor, RedisValue[] args, RedisKey[] keys)
         {
-            var count = cursor.Get(keys[0]).AsInt();
+            var count = cursor.Get(keys[0]).AsInt() ?? 0;
             var toAdd = (int) args[0];
 
             for (var i = 0; i < count; i++)

@@ -36,7 +36,7 @@ namespace RedSharper.CSharp
             _decompiler = decompiler;
         }
 
-        public DecompilationResult Decompile<TRes>(Func<Cursor, RedisValue[], RedisKey[], TRes> action)
+        public DecompilationResult Decompile<TRes>(Func<ICursor, RedisValue[], RedisKey[], TRes> action)
             where TRes : RedResult
         {
             var token = action.Method.MetadataToken;

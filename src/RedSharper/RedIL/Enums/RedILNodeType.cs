@@ -25,6 +25,7 @@ namespace RedSharper.RedIL.Enums
         While,
         Status,
         CallLuaMethod,
-        Continue
+        Continue,
+        Cursor
     }
 }

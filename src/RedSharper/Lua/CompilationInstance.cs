@@ -99,7 +99,8 @@ namespace RedSharper.Lua
 
             public bool VisitCallRedisMethodNode(CallRedisMethodNode node, CompilationState state)
             {
-                state.Write("redis.pcall('");
+                node.Caller.AcceptVisitor(this, state);
+                state.Write(".pcall('");
                 switch (node.Method)
                 {
                     case RedisCommand.Get:
@@ -351,6 +352,12 @@ namespace RedSharper.Lua
                 return true;
             }
 
+            public bool VisitCursorNode(CursorNode node, CompilationState state)
+            {
+                state.Write("redis");
+                return true;
+            }
+
             private void WriteLines(CompilationState state, RedILNode[] lines, bool firstLine = true)
             {
                 for (int i = 0; i < lines.Length; i++)
@@ -430,13 +437,11 @@ namespace RedSharper.Lua
                         state.Write(">=");
                         break;
                     case BinaryExpressionOperator.Or:
-                        state.Write("or");
-                        break;
-                    case BinaryExpressionOperator.And:
-                        state.Write("and");
-                        break;
                     case BinaryExpressionOperator.NullCoalescing:
                         state.Write(" or ");
+                        break;
+                    case BinaryExpressionOperator.And:
+                        state.Write(" and ");
                         break;
                 }
             }
