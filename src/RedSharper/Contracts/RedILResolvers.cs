@@ -49,7 +49,7 @@ namespace RedSharper.Contracts
     {
         public override ExpressionNode Resolve(IExpressionVisitor visitor, ExpressionNode caller, ExpressionNode[] arguments)
         {
-            return new CastNode(DataValueType.Integer, arguments.First());
+            return new CastNode(DataValueType.Integer, caller);
         }
     }
 
@@ -57,7 +57,7 @@ namespace RedSharper.Contracts
     {
         public override ExpressionNode Resolve(IExpressionVisitor visitor, ExpressionNode caller, ExpressionNode[] arguments)
         {
-            return new CastNode(DataValueType.Integer, arguments.First());
+            return new CastNode(DataValueType.Integer, caller);
         }
     }
 
@@ -65,7 +65,7 @@ namespace RedSharper.Contracts
     {
         public override ExpressionNode Resolve(IExpressionVisitor visitor, ExpressionNode caller, ExpressionNode[] arguments)
         {
-            return new CastNode(DataValueType.Float, arguments.First());
+            return new CastNode(DataValueType.Float, caller);
         }
     }
 }

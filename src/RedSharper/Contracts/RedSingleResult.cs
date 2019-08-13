@@ -1,5 +1,6 @@
 using System;
 using RedSharper.Contracts.Enums;
+using RedSharper.RedIL.Attributes;
 using StackExchange.Redis;
 
 namespace RedSharper.Contracts
@@ -27,11 +28,14 @@ namespace RedSharper.Contracts
 
         #region Conversions
 
-        internal int ConvertToInt() => (int)_value;
+        [RedILResolve(typeof(SingleResultAsIntResolver))]
+        public int? AsInt() => (int)_value;
 
-        internal long ConvertToLong() => (long)_value;
+        [RedILResolve(typeof(SingleResultAsLongResolver))]
+        public long? AsLong() => (long)_value;
 
-        internal double ConvertToDouble() => (double)_value;
+        [RedILResolve(typeof(SingleResultAsDoubleResolver))]
+        public double? AsDouble() => (double)_value;
 
         #endregion
     }
