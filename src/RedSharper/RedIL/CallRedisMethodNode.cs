@@ -14,7 +14,8 @@ namespace RedSharper.RedIL
                 { RedisCommand.Set, DataValueType.Boolean },
                 { RedisCommand.HGet, DataValueType.String },
                 { RedisCommand.HMGet, DataValueType.Array },
-                { RedisCommand.HSet, DataValueType.Boolean }
+                { RedisCommand.HSet, DataValueType.Boolean },
+                { RedisCommand.HGetAll, DataValueType.Array }
             };
 
         public RedisCommand Method { get; set; }

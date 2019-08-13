@@ -42,13 +42,24 @@ namespace RedSharper.Lua
 
             public void Write(string text)
             {
+                WriteIdent();
+                Builder.Append(text);
+                _currentLine++;
+            }
+
+            public void Write(char ch)
+            {
+                WriteIdent();
+                Builder.Append(ch);
+                _currentLine++;
+            }
+
+            private void WriteIdent()
+            {
                 if (_currentLine == 0)
                 {
                     for (int i = 0; i < _identation; i++) Builder.Append(" ");
                 }
-
-                Builder.Append(text);
-                _currentLine++;
             }
         }
 
@@ -173,7 +184,7 @@ namespace RedSharper.Lua
                         state.Write(node.Value.ToString());
                         break;
                     case DataValueType.String:
-                        state.Write($"\"{node.Value.ToString()}\"");
+                        WriteString(state, node.Value.ToString());
                         break;
                     default: throw new LuaCompilationException($"Unable to write constant value node with data type '{node.DataType}'");
                 }
@@ -260,7 +271,7 @@ namespace RedSharper.Lua
                     case Status.Ok:
                         state.Write("{ ");
                         state.Write("ok = ");
-                        state.Write("'OK'");
+                        WriteString(state, "Ok");
                         state.Write(" }");
                         break;
                     case Status.Error:
@@ -355,6 +366,14 @@ namespace RedSharper.Lua
             public bool VisitCursorNode(CursorNode node, CompilationState state)
             {
                 state.Write("redis");
+                return true;
+            }
+
+            public bool VisitArrayTableDefinitionNode(ArrayTableDefinitionNode node, CompilationState state)
+            {
+                state.Write("{");
+                WriteArguments(state, node.Elements);
+                state.Write("}");
                 return true;
             }
 
@@ -457,6 +476,13 @@ namespace RedSharper.Lua
                         state.Write("not ");
                         break;
                 }
+            }
+
+            private void WriteString(CompilationState state, string str)
+            {
+                state.Write('"');
+                state.Write(str);
+                state.Write('"');
             }
         }
 

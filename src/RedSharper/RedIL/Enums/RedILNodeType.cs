@@ -26,6 +26,7 @@ namespace RedSharper.RedIL.Enums
         Status,
         CallLuaMethod,
         Continue,
-        Cursor
+        Cursor,
+        ArrayTableDefinition
     }
 }

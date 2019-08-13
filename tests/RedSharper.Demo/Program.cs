@@ -10,6 +10,19 @@ namespace RedSharper.Demo
     {
         static RedStatusResult RedisFunction(ICursor cursor, RedisValue[] args, RedisKey[] keys)
         {
+            var count = (int) args[0];
+            for (var i = 1; i <= count; i++)
+            {
+                cursor.HSet(keys[0], i, i * 2);
+            }
+
+            var list = cursor.HMGet(keys[0], new RedisValue[] {1, 3});
+
+            return RedResult.Ok;
+        }
+        
+        static RedStatusResult RedisFunction2(ICursor cursor, RedisValue[] args, RedisKey[] keys)
+        {
             var count = cursor.Get(keys[0]).AsInt() ?? 0;
             var toAdd = (int) args[0];
 

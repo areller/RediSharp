@@ -90,8 +90,11 @@ namespace RedSharper.RedIL
 
             public RedILNode VisitArrayCreateExpression(ArrayCreateExpression arrayCreateExpression, State data)
             {
-                //TODO: Create Table of Constant Size
-                throw new System.NotImplementedException();
+                var arrayTableDef = new ArrayTableDefinitionNode();
+                arrayTableDef.Elements = arrayCreateExpression.Initializer.Elements.Select(elem =>
+                    CastUtilities.CastRedILNode<ExpressionNode>(elem.AcceptVisitor(this, data.NewState(arrayCreateExpression, arrayTableDef)))).ToArray();
+
+                return arrayTableDef;
             }
 
             public RedILNode VisitArrayInitializerExpression(ArrayInitializerExpression arrayInitializerExpression, State data)
