@@ -8,7 +8,7 @@ namespace RedSharper.Demo
 {
     class Program
     {
-        static RedStatusResult RedisFunction(ICursor cursor, RedisValue[] args, RedisKey[] keys)
+        static RedArrayResult RedisFunction(ICursor cursor, RedisValue[] args, RedisKey[] keys)
         {
             var count = (int) args[0];
             for (var i = 1; i <= count; i++)
@@ -18,7 +18,7 @@ namespace RedSharper.Demo
 
             var list = cursor.HMGet(keys[0], new RedisValue[] {1, 3});
 
-            return RedResult.Ok;
+            return list;
         }
         
         static RedStatusResult RedisFunction2(ICursor cursor, RedisValue[] args, RedisKey[] keys)
@@ -65,7 +65,8 @@ namespace RedSharper.Demo
 
             await handle.Init();
             var res = await handle.Execute(new RedisValue[] {5}, new RedisKey[] {"countKey"});
-            Console.WriteLine(res.IsOk);
+            
+            Console.WriteLine(res);
         }
     }
 }

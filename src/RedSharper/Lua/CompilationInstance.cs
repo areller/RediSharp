@@ -352,6 +352,9 @@ namespace RedSharper.Lua
                     case LuaMethod.StringToLower:
                         state.Write("string.lower");
                         break;
+                    case LuaMethod.TableUnpack:
+                        state.Write("unpack");
+                        break;
                     default:
                         throw new LuaCompilationException($"Unsupported lua method '{node.Method}'");
                 }

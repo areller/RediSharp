@@ -9,7 +9,8 @@ namespace RedSharper.RedIL
         private static readonly Dictionary<LuaMethod, DataValueType> MethodTypeTable
             = new Dictionary<LuaMethod, DataValueType>()
             {
-                { LuaMethod.StringToLower, DataValueType.String }
+                { LuaMethod.StringToLower, DataValueType.String },
+                { LuaMethod.TableUnpack, DataValueType.Array }
             };
         
         public LuaMethod Method { get; set; }
