@@ -1,6 +1,6 @@
-# RedSharper
+# RediSharp
 
-RedSharper allows you to write C# code that will execute directly on the Redis server.  
+RediSharp allows you to write C# code that will execute directly on the Redis server.  
 
 It does that by [transpiling](https://en.wikipedia.org/wiki/Source-to-source_compiler) the C# code to Lua.
 
@@ -38,7 +38,7 @@ return { ok = 'OK' };
 
 When we execute Lua scripts from C#, we lose a lot of the advanges that the C# compiler and the IDE offer, such as auto completion, compile-time error checking, debugging, and many more.  
 
-RedSharper aims to mitigate these issues.  
+RediSharp aims to mitigate these issues.  
 
 ## TODO List
 
@@ -58,18 +58,18 @@ RedSharper aims to mitigate these issues.
 ## Source Guide
 
 ### Demo
-[RedSharper.Demo](./tests/RedSharper.Demo) is a demo project that utilizes the library.  
+[RediSharp.Demo](./tests/RediSharp.Demo) is a demo project that utilizes the library.  
 
 ### C# Code Decompilation
-RedSharper uses [ILSpy](https://github.com/icsharpcode/ILSpy) to decompile compiled lambda function to a C# syntax tree.  
-See the [CSharp](./src/RedSharper/CSharp) folder. 
+RediSharp uses [ILSpy](https://github.com/icsharpcode/ILSpy) to decompile compiled lambda function to a C# syntax tree.  
+See the [CSharp](./src/RediSharp/CSharp) folder. 
 
 ### RedIL
-[RedIL](./src/RedSharper/RedIL) is an intermidiate language that is created from C# code, and later compiled to Lua, and potentially other targets in the future (See "Future Plans").  
+[RedIL](./src/RediSharp/RedIL) is an intermidiate language that is created from C# code, and later compiled to Lua, and potentially other targets in the future (See "Future Plans").  
 
 ### Lua Compilation
-Lua is written by traversing the RedIL using an [IRedILVisitor](./src/RedSharper/RedIL/IRedILVisitor.cs).  
-See the [Lua](./src/RedSharper/Lua) folder. 
+Lua is written by traversing the RedIL using an [IRedILVisitor](./src/RediSharp/RedIL/IRedILVisitor.cs).  
+See the [Lua](./src/RediSharp/Lua) folder. 
 
 ## Dependencies
 * [ILSpy](https://github.com/icsharpcode/ILSpy) - MIT License
