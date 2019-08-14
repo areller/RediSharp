@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using RedSharper.RedIL.Enums;
 
-namespace RedSharper.RedIL
+namespace RedSharper.RedIL.Nodes
 {
     class UniformOperatorNode : ExpressionNode
     {

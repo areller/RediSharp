@@ -4,6 +4,7 @@ using System.Text;
 using RedSharper.Enums;
 using RedSharper.RedIL;
 using RedSharper.RedIL.Enums;
+using RedSharper.RedIL.Nodes;
 
 namespace RedSharper.Lua
 {

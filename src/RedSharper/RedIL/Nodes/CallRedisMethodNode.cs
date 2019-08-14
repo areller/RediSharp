@@ -1,9 +1,8 @@
 using System.Collections.Generic;
-using ICSharpCode.Decompiler.IL;
 using RedSharper.Enums;
 using RedSharper.RedIL.Enums;
 
-namespace RedSharper.RedIL
+namespace RedSharper.RedIL.Nodes
 {
     class CallRedisMethodNode : ExpressionNode
     {

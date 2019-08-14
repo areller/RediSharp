@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using RedSharper.Enums;
 using RedSharper.RedIL.Enums;
 
-namespace RedSharper.RedIL
+namespace RedSharper.RedIL.Nodes
 {
     class CallLuaMethodNode : ExpressionNode
     {

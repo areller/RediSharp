@@ -9,6 +9,7 @@ using RedSharper.RedIL;
 using System.Diagnostics;
 using System.Reflection.Emit;
 using RedSharper.Lua;
+using RedSharper.RedIL.Nodes;
 
 namespace RedSharper
 {

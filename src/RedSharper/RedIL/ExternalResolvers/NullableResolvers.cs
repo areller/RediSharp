@@ -1,5 +1,6 @@
 using RedSharper.RedIL.Attributes;
 using RedSharper.RedIL.Enums;
+using RedSharper.RedIL.Nodes;
 
 namespace RedSharper.RedIL.ExternalResolvers
 {

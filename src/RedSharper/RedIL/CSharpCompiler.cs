@@ -18,7 +18,8 @@ using RedSharper.Enums;
 using RedSharper.RedIL.Attributes;
 using RedSharper.RedIL.ExternalResolvers;
 using RedSharper.RedIL.ExternalResolvers.Enums;
-using RedSharper.RedIL.InternalNodes;
+using RedSharper.RedIL.Nodes;
+using RedSharper.RedIL.Nodes.Internal;
 using Attribute = ICSharpCode.Decompiler.CSharp.Syntax.Attribute;
 
 namespace RedSharper.RedIL

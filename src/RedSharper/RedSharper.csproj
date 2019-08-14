@@ -11,8 +11,4 @@
     <PackageReference Include="StackExchange.Redis" Version="2.0.601" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="RedIL\Optimizers" />
-  </ItemGroup>
-
 </Project>

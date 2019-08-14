@@ -1,6 +1,6 @@
 using RedSharper.RedIL.Enums;
 
-namespace RedSharper.RedIL.InternalNodes
+namespace RedSharper.RedIL.Nodes.Internal
 {
     class ContinueNode : RedILNode
     {

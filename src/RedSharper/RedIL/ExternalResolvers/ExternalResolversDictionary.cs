@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using RedSharper.RedIL.Attributes;
 using RedSharper.RedIL.ExternalResolvers.Enums;
 
@@ -43,6 +45,14 @@ namespace RedSharper.RedIL.ExternalResolvers
                 Type = EntryType.Member,
                 Resolver = new NullableValueResolver()
             });
+
+            AddEntryByExample<int?, bool>(EntryType.Member, e => e.HasValue);
+            AddEntryByExample<double, double>(EntryType.Method, e => Math.Pow(0, 0));
+        }
+
+        private void AddEntryByExample<T, TRes>(EntryType type, Expression<Func<T, TRes>> expr, bool ignoreGenerics = true)
+        {
+            ;
         }
 
         public RedILResolver FindResolver(string reflectionName, string fullName, string name, EntryType type)

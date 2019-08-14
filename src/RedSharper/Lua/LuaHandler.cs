@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
 using RedSharper.Contracts;
 using RedSharper.RedIL;
+using RedSharper.RedIL.Nodes;
 using StackExchange.Redis;
 
 namespace RedSharper.Lua

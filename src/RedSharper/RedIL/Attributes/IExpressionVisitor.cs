@@ -1,3 +1,5 @@
+using RedSharper.RedIL.Nodes;
+
 namespace RedSharper.RedIL.Attributes
 {
     interface IExpressionVisitor

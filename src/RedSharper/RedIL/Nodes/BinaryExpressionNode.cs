@@ -1,6 +1,6 @@
 using RedSharper.RedIL.Enums;
 
-namespace RedSharper.RedIL
+namespace RedSharper.RedIL.Nodes
 {
     class BinaryExpressionNode : ExpressionNode
     {

@@ -1,6 +1,7 @@
 using System.Text;
 using ICSharpCode.Decompiler.CSharp.Syntax;
 using RedSharper.RedIL;
+using RedSharper.RedIL.Nodes;
 
 namespace RedSharper.Lua
 {
