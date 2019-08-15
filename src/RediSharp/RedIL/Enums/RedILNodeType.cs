@@ -27,6 +27,7 @@ namespace RediSharp.RedIL.Enums
         CallLuaMethod,
         Continue,
         Cursor,
-        ArrayTableDefinition
+        ArrayTableDefinition,
+        IteratorLoop
     }
 }

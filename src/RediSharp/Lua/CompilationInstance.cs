@@ -381,6 +381,24 @@ namespace RediSharp.Lua
                 return true;
             }
 
+            public bool VisitIteratorLoopNode(IteratorLoopNode node, CompilationState state)
+            {
+                //TODO: Handle foreach over dictionaries, right now only arrays are handled
+                state.Write("for _,");
+                state.Write(node.CursorName);
+                state.Write(" in ipairs(");
+                node.Over.AcceptVisitor(this, state);
+                state.Write(") do");
+                state.NewLine();
+                state.Ident();
+                node.Body.AcceptVisitor(this, state);
+                state.NewLine();
+                state.FinishIdent();
+                state.Write("end");
+
+                return true;
+            }
+
             private void WriteLines(CompilationState state, RedILNode[] lines, bool firstLine = true)
             {
                 for (int i = 0; i < lines.Length; i++)

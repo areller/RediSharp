@@ -394,8 +394,19 @@ namespace RediSharp.RedIL
 
             public RedILNode VisitForeachStatement(ForeachStatement foreachStatement, State data)
             {
-                //TODO: Handle foreach
-                throw new System.NotImplementedException();
+                //TODO: Find how to handle for each loops over dictionaries
+                // In case of for each over arrays, there is a 1=>1 map between the Lua variable and the C# variable,
+                // In for each over dictionary, one C# variable (KeyValuePair) maps to 2 Lua variables
+                var cursorType = ExtractTypeFromAnnontations(foreachStatement.Annotations);
+                var iteratorLoop = new IteratorLoopNode();
+
+                iteratorLoop.CursorType = cursorType;
+                iteratorLoop.CursorName = foreachStatement.VariableName;
+                iteratorLoop.Over = CastUtilities.CastRedILNode<ExpressionNode>(
+                    foreachStatement.InExpression.AcceptVisitor(this, data.NewState(foreachStatement, iteratorLoop)));
+                iteratorLoop.Body = CastUtilities.CastRedILNode<BlockNode>(foreachStatement.EmbeddedStatement.AcceptVisitor(this, data.NewState(foreachStatement, iteratorLoop)));
+
+                return iteratorLoop;
             }
 
             public RedILNode VisitForStatement(ForStatement forStatement, State data)
@@ -462,26 +473,8 @@ namespace RediSharp.RedIL
                 {
                     return new CursorNode();
                 }
-                
-                //TOOD: What is the difference between this and identifier?
-                var resType = DataValueType.Unknown;
-                var ilResolveResult = identifierExpression.Annotations.Where(annot => annot is ILVariableResolveResult)
-                    .FirstOrDefault() as ILVariableResolveResult;
 
-                if (ilResolveResult != null)
-                {
-                    if (ilResolveResult.Type.Kind != TypeKind.Array)
-                    {
-                        var type = Type.GetType(ilResolveResult.Type.ReflectionName);
-                        resType = TypeUtilities.GetValueType(type);
-                    }
-                    else
-                    {
-                        //TODO: Handle list/dictionary types
-                        resType = DataValueType.Array;
-                    }
-                }
-                
+                var resType = ResolveExpressionType(identifierExpression);
                 return new IdentifierNode(identifierExpression.Identifier, resType);
             }
 
@@ -1057,6 +1050,32 @@ namespace RediSharp.RedIL
             public RedILNode VisitYieldReturnStatement(YieldReturnStatement yieldReturnStatement, State data)
             {
                 throw new System.NotImplementedException();
+            }
+
+            private DataValueType ResolveExpressionType(Expression expr)
+                => ExtractTypeFromAnnontations(expr.Annotations);
+
+            private DataValueType ExtractTypeFromAnnontations(IEnumerable<object> annontations)
+            {
+                var resType = DataValueType.Unknown;
+                var ilResolveResult = annontations.Where(annot => annot is ILVariableResolveResult)
+                    .FirstOrDefault() as ILVariableResolveResult;
+
+                if (ilResolveResult != null)
+                {
+                    if (ilResolveResult.Type.Kind != TypeKind.Array)
+                    {
+                        var type = Type.GetType(ilResolveResult.Type.ReflectionName);
+                        resType = TypeUtilities.GetValueType(type);
+                    }
+                    else
+                    {
+                        //TODO: Handle list/dictionary types
+                        resType = DataValueType.Array;
+                    }
+                }
+
+                return resType;
             }
 
             //TODO: This covers the cases I've seen so far, might have to rewrite it to a more general version that would remove all instances of `continue`

@@ -60,7 +60,7 @@ namespace RediSharp.Demo
             var connection = await ConnectionMultiplexer.ConnectAsync("localhost");
 
             Client client = new Client(connection.GetDatabase(0));
-            var handle = client.GetLuaHandle(RedisFunction2);
+            var handle = client.GetLuaHandle(RedisFunction);
 
             // Printing Lua
             Console.WriteLine("===========================");

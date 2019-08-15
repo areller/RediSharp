@@ -54,5 +54,7 @@ namespace RediSharp.RedIL
         TReturn VisitCursorNode(CursorNode node, TState state);
 
         TReturn VisitArrayTableDefinitionNode(ArrayTableDefinitionNode node, TState state);
+
+        TReturn VisitIteratorLoopNode(IteratorLoopNode node, TState state);
     }
 }

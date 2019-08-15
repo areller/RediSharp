@@ -8,6 +8,7 @@ namespace RediSharp.RedIL.Enums
         String,
         Boolean,
         Array,
-        Dictionary
+        Dictionary,
+        KVPair
     }
 }
