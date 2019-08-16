@@ -4,6 +4,7 @@ using StackExchange.Redis;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using System.Reflection;
 using System.Reflection.Emit;
 using RediSharp.Contracts;
 using RediSharp.CSharp;
@@ -15,19 +16,19 @@ namespace RediSharp
 {
     public class Client
     {
-        private ActionDecompiler _decompiler;
-
         private CSharpCompiler _csharpCompiler;
 
         private LuaHandler _luaHandler;
 
         private ConcurrentDictionary<object, Lazy<RedILNode>> _redILCache;
 
+        private ActionDecompiler _decompiler;
+
         public Client(IDatabase db)
         {
-            _decompiler = new ActionDecompiler();
             _csharpCompiler = new CSharpCompiler();
             _luaHandler = new LuaHandler(db);
+            _decompiler = new ActionDecompiler(Assembly.GetCallingAssembly());
         }
 
         public async Task<TRes> Execute<TRes>(Func<ICursor, RedisValue[], RedisKey[], TRes> action, RedisValue[] arguments = null, RedisKey[] keys = null)

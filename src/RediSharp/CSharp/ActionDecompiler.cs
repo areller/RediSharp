@@ -18,16 +18,19 @@ namespace RediSharp.CSharp
     {
         private Assembly _rootAssembly;
 
+        private Assembly _callingAssembly;
+
         private AssemblyResolver _assemblyResolver;
 
         private CSharpDecompiler _decompiler;
 
-        public ActionDecompiler()
+        public ActionDecompiler(Assembly callingAssembly)
         {
+            _callingAssembly = callingAssembly;
             _rootAssembly = Assembly.GetEntryAssembly();
-            _assemblyResolver = new AssemblyResolver(_rootAssembly);
+            _assemblyResolver = new AssemblyResolver(_rootAssembly, _callingAssembly);
 
-            var file = _rootAssembly.Location;
+            var file = _callingAssembly.Location;
             var decompiler = new CSharpDecompiler(file, _assemblyResolver, new DecompilerSettings()
             {
                 ExtensionMethods = false
