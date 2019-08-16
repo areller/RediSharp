@@ -1,6 +1,6 @@
 language: csharp
 solution: redisharp.sln
-dotnet: 2.1.502
+dotnet: 2.2.104
 script:
   - dotnet restore
   - dotnet test
