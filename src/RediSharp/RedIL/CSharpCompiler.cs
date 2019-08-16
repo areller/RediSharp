@@ -228,16 +228,15 @@ namespace RediSharp.RedIL
 
             public RedILNode VisitCastExpression(CastExpression castExpression, State data)
             {
+                DataValueType resType;
                 var type = castExpression.Type as PrimitiveType;
-                if (type == null)
-                {
-                    throw new RedILException($"Only supports casting to primitive types");
-                }
 
-                var castNode = new CastNode(TypeUtilities.GetValueType(type.KnownTypeCode));
+                resType = type is null ? DataValueType.Unknown : TypeUtilities.GetValueType(type.KnownTypeCode);
+
+                var castNode = new CastNode(resType);
                 castNode.Argument = CastUtilities.CastRedILNode<ExpressionNode>(castExpression.Expression.AcceptVisitor(this, data.NewState(castExpression, castNode)));
 
-                return castNode;
+                return castNode.Argument.Type != RedILNodeType.Nil ? castNode : castNode.Argument;
             }
 
             public RedILNode VisitCatchClause(CatchClause catchClause, State data)
