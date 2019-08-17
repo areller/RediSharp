@@ -1,10 +1,10 @@
 using System;
 using System.Linq;
 using RediSharp.Enums;
-using RediSharp.RedIL.Attributes;
 using RediSharp.RedIL.Enums;
 using RediSharp.RedIL.Nodes;
 using RediSharp.RedIL;
+using RediSharp.RedIL.Resolving.Attributes;
 
 namespace RediSharp
 {

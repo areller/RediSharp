@@ -5,6 +5,8 @@ namespace RediSharp.RedIL
 {
     interface IRedILVisitor<TReturn, TState>
     {
+        TReturn VisitRootNode(RootNode node, TState state);
+        
         TReturn VisitArgsTableNode(ArgsTableNode node, TState state);
 
         TReturn VisitKeysTableNode(KeysTableNode node, TState state);

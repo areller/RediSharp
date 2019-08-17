@@ -1,17 +1,19 @@
+using System.Collections.Generic;
 using RediSharp.RedIL.Enums;
 
 namespace RediSharp.RedIL.Nodes
 {
     class ArrayTableDefinitionNode : ExpressionNode
     {
-        public ExpressionNode[] Elements { get; set; }
+        public IList<ExpressionNode> Elements { get; set; }
 
         public ArrayTableDefinitionNode() 
             : base(RedILNodeType.ArrayTableDefinition, DataValueType.Array)
         {
+            Elements = new List<ExpressionNode>();
         }
 
-        public ArrayTableDefinitionNode(ExpressionNode[] elements) 
+        public ArrayTableDefinitionNode(IList<ExpressionNode> elements) 
             : base(RedILNodeType.ArrayTableDefinition, DataValueType.Array)
         {
             Elements = elements;

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using RediSharp.Enums;
@@ -66,6 +67,11 @@ namespace RediSharp.Lua
 
         class Visitor : IRedILVisitor<bool, CompilationState>
         {
+            public bool VisitRootNode(RootNode node, CompilationState state)
+            {
+                return node.Body.AcceptVisitor(this, state);
+            }
+
             public bool VisitArgsTableNode(ArgsTableNode node, CompilationState state)
             {
                 state.Write("ARGV");
@@ -412,9 +418,9 @@ namespace RediSharp.Lua
                 }
             }
 
-            private void WriteArguments(CompilationState state, ExpressionNode[] arguments, bool firstArgument = true)
+            private void WriteArguments(CompilationState state, IList<ExpressionNode> arguments, bool firstArgument = true)
             {
-                for (var i = 0; i < arguments.Length; i++)
+                for (var i = 0; i < arguments.Count; i++)
                 {
                     if (i > 0 || !firstArgument)
                     {

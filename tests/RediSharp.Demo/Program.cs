@@ -19,7 +19,7 @@ namespace RediSharp.Demo
 
             foreach (var arg in list)
             {
-                cursor.Set("key_" + arg, 15);
+                cursor.Set("key_" + arg, 15, new TimeSpan(1, 1, 1));
             }
 
             return RedResult.Ok;

@@ -15,16 +15,17 @@ namespace RediSharp.RedIL.Nodes
         
         public LuaMethod Method { get; set; }
 
-        public ExpressionNode[] Arguments { get; set; }
+        public IList<ExpressionNode> Arguments { get; set; }
 
         public CallLuaMethodNode()
             : base(RedILNodeType.CallLuaMethod)
         {
+            Arguments = new List<ExpressionNode>();
         }
 
         public CallLuaMethodNode(
             LuaMethod method,
-            ExpressionNode[] arguments)
+            IList<ExpressionNode> arguments)
             : base(RedILNodeType.CallLuaMethod, MethodTypeTable[method])
         {
             Method = method;

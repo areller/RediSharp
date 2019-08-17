@@ -1,6 +1,6 @@
 using RediSharp.RedIL.Nodes;
 
-namespace RediSharp.RedIL.Attributes
+namespace RediSharp.RedIL.Resolving.Attributes
 {
     interface IExpressionVisitor
     {

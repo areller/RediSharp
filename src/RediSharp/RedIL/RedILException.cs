@@ -1,4 +1,6 @@
 using System;
+using ICSharpCode.Decompiler.CSharp.Syntax;
+using RediSharp.RedIL.Nodes;
 
 namespace RediSharp.RedIL
 {
@@ -6,6 +8,7 @@ namespace RediSharp.RedIL
     {
         public RedILException(string message)
             : base(message)
-        { }
+        {
+        }
     }
 }

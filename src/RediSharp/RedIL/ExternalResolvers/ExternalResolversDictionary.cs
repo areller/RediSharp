@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using RediSharp.RedIL.Attributes;
 using RediSharp.RedIL.ExternalResolvers.Enums;
+using RediSharp.RedIL.Resolving.Attributes;
 
 namespace RediSharp.RedIL.ExternalResolvers
 {

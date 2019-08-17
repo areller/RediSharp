@@ -1,7 +1,6 @@
 using System;
-using ICSharpCode.Decompiler.TypeSystem;
 
-namespace RediSharp.RedIL.Attributes
+namespace RediSharp.RedIL.Resolving.Attributes
 {
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property)]
     class RedILResolve : Attribute

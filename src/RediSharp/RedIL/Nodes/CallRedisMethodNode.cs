@@ -21,14 +21,18 @@ namespace RediSharp.RedIL.Nodes
 
         public ExpressionNode Caller { get; set; }
 
-        public ExpressionNode[] Arguments { get; set; }
+        public IList<ExpressionNode> Arguments { get; set; }
 
-        public CallRedisMethodNode() : base(RedILNodeType.CallRedisMethod) { }
+        public CallRedisMethodNode()
+            : base(RedILNodeType.CallRedisMethod)
+        {
+            Arguments = new List<ExpressionNode>();
+        }
 
         public CallRedisMethodNode(
             RedisCommand method,
             ExpressionNode caller,
-            ExpressionNode[] arguments)
+            IList<ExpressionNode> arguments)
             : base(RedILNodeType.CallRedisMethod, CommandTypeTable[method])
         {
             Method = method;

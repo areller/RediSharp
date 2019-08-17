@@ -1,7 +1,7 @@
 using System;
 using RediSharp.Contracts;
 using RediSharp.Enums;
-using RediSharp.RedIL.Attributes;
+using RediSharp.RedIL.Resolving.Attributes;
 using StackExchange.Redis;
 
 namespace RediSharp

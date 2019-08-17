@@ -2,6 +2,7 @@ namespace RediSharp.RedIL.Enums
 {
     public enum RedILNodeType
     {
+        Root,
         Empty,
         VariableDeclaration,
         Assign,
