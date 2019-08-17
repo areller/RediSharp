@@ -1,6 +1,8 @@
 language: csharp
 solution: redisharp.sln
 dotnet: 2.2.104
+before_script:
+  - sudo redis-server /etc/redis/redis.conf --port 6379
 script:
   - dotnet restore
   - dotnet test
