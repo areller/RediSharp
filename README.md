@@ -1,24 +1,26 @@
 # RediSharp
 
+![](https://travis-ci.com/areller/RediSharp.svg?branch=master)
+
 RediSharp allows you to write C# code that will execute directly on the Redis server.  
 
 It does that by [transpiling](https://en.wikipedia.org/wiki/Source-to-source_compiler) the C# code to Lua.
 
 ```C#
 var res = await client.Execute((cursor, argv, keys) =>
-            {
-                var count = cursor.Get(keys[0]).AsInt();
-                var toAdd = (int) argv[0];
+{
+    var count = cursor.Get(keys[0]).AsInt();
+    var toAdd = (int) argv[0];
 
-                for (var i = 0; i < count; i++)
-                {
-                    var key = keys[0] + "_" + i;
-                    var currentValue = cursor.Get(key).AsLong() ?? 0;
-                    cursor.Set(key, currentValue + toAdd);
-                }
+    for (var i = 0; i < count; i++)
+    {
+        var key = keys[0] + "_" + i;
+        var currentValue = cursor.Get(key).AsLong() ?? 0;
+        cursor.Set(key, currentValue + toAdd);
+    }
 
-                return RedResult.Ok;
-            }, new RedisValue[] {5}, new RedisKey[] {"countKey"});
+    return RedResult.Ok;
+}, new RedisValue[] {5}, new RedisKey[] {"countKey"});
 ```
 
 ```LUA
