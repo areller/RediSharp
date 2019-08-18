@@ -4,11 +4,12 @@ using RediSharp.Enums;
 using RediSharp.RedIL.Enums;
 using RediSharp.RedIL.Nodes;
 using RediSharp.RedIL;
+using RediSharp.RedIL.Resolving;
 using RediSharp.RedIL.Resolving.Attributes;
 
 namespace RediSharp
 {
-    class CursorRedisMethodResolver : RedILResolver
+    class CursorRedisMethodResolver : RedILMethodResolver
     {
         private RedisCommand _cmd;
         
@@ -17,7 +18,7 @@ namespace RediSharp
             _cmd = (RedisCommand) arg;
         }
         
-        public override ExpressionNode Resolve(IExpressionVisitor visitor, ExpressionNode caller, ExpressionNode[] arguments)
+        public override ExpressionNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
         {
             // Redis methods expect arguments that are strings, integers, etc... so we have to unpack arrays
             // If we can unpack array in place (if it's an array table definition node), we do it,

@@ -1,20 +1,21 @@
 using RediSharp.RedIL.Enums;
 using RediSharp.RedIL.Nodes;
+using RediSharp.RedIL.Resolving;
 using RediSharp.RedIL.Resolving.Attributes;
 
 namespace RediSharp.RedIL.ExternalResolvers
 {
-    class NullableValueResolver : RedILResolver
+    class NullableValueResolver : RedILMemberResolver
     {
-        public override ExpressionNode Resolve(IExpressionVisitor visitor, ExpressionNode caller, ExpressionNode[] arguments)
+        public override ExpressionNode Resolve(Context context, ExpressionNode caller)
         {
             return caller;
         }
     }
     
-    class NullableHasValueResolver : RedILResolver
+    class NullableHasValueResolver : RedILMemberResolver
     {
-        public override ExpressionNode Resolve(IExpressionVisitor visitor, ExpressionNode caller, ExpressionNode[] arguments)
+        public override ExpressionNode Resolve(Context context, ExpressionNode caller)
         {
             return new BinaryExpressionNode(
                 DataValueType.Boolean,

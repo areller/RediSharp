@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using ICSharpCode.Decompiler.CSharp;
+using ICSharpCode.Decompiler.CSharp.Resolver;
 using ICSharpCode.Decompiler.CSharp.Syntax;
 using ICSharpCode.Decompiler.CSharp.Syntax.PatternMatching;
 using ICSharpCode.Decompiler.Semantics;
@@ -26,10 +27,13 @@ namespace RediSharp.RedIL
 
             private DecompilationResult _csharp;
 
+            private MainResolver _resolver;
+
             public AstVisitor(CSharpCompiler compiler, DecompilationResult csharp)
             {
                 _compiler = compiler;
                 _csharp = csharp;
+                _resolver = _compiler._mainResolver;
             }
 
             /*
@@ -285,7 +289,26 @@ namespace RediSharp.RedIL
 
             public RedILNode VisitInvocationExpression(InvocationExpression invocationExpression)
             {
-                return null;
+                var memberReference = invocationExpression.Target as MemberReferenceExpression;
+                if (memberReference is null)
+                {
+                    throw new RedILException($"Invocation is only possible by a member reference");
+                }
+
+                var isStatic = memberReference.Target is TypeReferenceExpression;
+                
+                var invocRes = GetInvocationResolveResult(invocationExpression);
+                var resolver = _resolver.ResolveMethod(isStatic, invocRes.DeclaringType,
+                    memberReference.MemberName, invocRes.Parameters.ToArray());
+
+                var caller = isStatic
+                    ? null
+                    : CastUtilities.CastRedILNode<ExpressionNode>(memberReference.Target.AcceptVisitor(this));
+
+                var arguments = invocationExpression.Arguments
+                    .Select(arg => CastUtilities.CastRedILNode<ExpressionNode>(arg.AcceptVisitor(this))).ToArray();
+
+                return resolver.Resolve(GetContext(), caller, arguments);
             }
 
             public RedILNode VisitMemberReferenceExpression(MemberReferenceExpression memberReferenceExpression)
@@ -300,7 +323,12 @@ namespace RediSharp.RedIL
                     throw new RedILException("Unable to find member resolve annotation");
                 }
 
-                return null;
+                var resolver = _resolver.ResolveMember(isStatic, resolveResult.Member.DeclaringType,
+                    memberReferenceExpression.MemberName);
+
+                var caller = isStatic ? null : CastUtilities.CastRedILNode<ExpressionNode>(memberReferenceExpression.Target.AcceptVisitor(this));
+
+                return resolver.Resolve(GetContext(), caller);
             }
 
             public RedILNode VisitNewLine(NewLineNode newLineNode)
@@ -415,13 +443,27 @@ namespace RediSharp.RedIL
             
             public RedILNode VisitObjectCreateExpression(ObjectCreateExpression objectCreateExpression)
             {
-                throw new NotImplementedException();
+                var invocRes = GetInvocationResolveResult(objectCreateExpression);
+                var resolver = _resolver.ResolveConstructor(invocRes.DeclaringType, invocRes.Parameters.ToArray());
+
+                var args = objectCreateExpression.Arguments.Select(arg =>
+                    CastUtilities.CastRedILNode<ExpressionNode>(arg.AcceptVisitor(this)));
+
+                var initializerElements = objectCreateExpression.Initializer.Elements
+                    .Select(elem => CastUtilities.CastRedILNode<ExpressionNode>(elem.AcceptVisitor(this))).ToArray();
+
+                return resolver.Resolve(GetContext(), args.ToArray(), initializerElements);
             }
 
             #endregion
 
             #region Private
 
+            private Context GetContext()
+            {
+                return null;
+            }
+            
             private BinaryExpressionNode CreateBinaryExpression(BinaryExpressionOperator op, ExpressionNode left,
                 ExpressionNode right)
             {
@@ -503,15 +545,15 @@ namespace RediSharp.RedIL
             }
 
             #region Types
-
+            
             private DataValueType ResolveExpressionType(Expression expr)
                 => ExtractTypeFromAnnontations(expr.Annotations);
 
             private DataValueType ExtractTypeFromAnnontations(IEnumerable<object> annontations)
             {
                 var resType = DataValueType.Unknown;
-                var ilResolveResult = annontations.Where(annot => annot is ILVariableResolveResult)
-                    .FirstOrDefault() as ILVariableResolveResult;
+                var ilResolveResult =
+                    annontations.FirstOrDefault(annot => annot is ILVariableResolveResult) as ILVariableResolveResult;
 
                 if (ilResolveResult != null)
                 {
@@ -528,6 +570,19 @@ namespace RediSharp.RedIL
                 }
 
                 return resType;
+            }
+
+            private IParameterizedMember GetInvocationResolveResult(Expression expr)
+            {
+                var invocResult = expr.Annotations
+                    .FirstOrDefault(annot => annot is CSharpInvocationResolveResult) as CSharpInvocationResolveResult;
+
+                if (invocResult is null)
+                {
+                    throw new RedILException($"Unable to get invocation resolve from '{expr}'");
+                }
+
+                return invocResult.Member;
             }
 
             #endregion

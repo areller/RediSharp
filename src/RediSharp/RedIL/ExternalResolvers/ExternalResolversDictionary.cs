@@ -19,7 +19,7 @@ namespace RediSharp.RedIL.ExternalResolvers
 
             public EntryType Type { get; set; }
 
-            public RedILResolver Resolver { get; set; }
+            //public RedILResolver Resolver { get; set; }
         }
 
         private List<Entry> _entries;
@@ -34,7 +34,7 @@ namespace RediSharp.RedIL.ExternalResolvers
                 ReflectionName = null,
                 Name = "HasValue",
                 Type = EntryType.Member,
-                Resolver = new NullableHasValueResolver()
+                //Resolver = new NullableHasValueResolver()
             });
 
             _entries.Add(new Entry()
@@ -43,7 +43,7 @@ namespace RediSharp.RedIL.ExternalResolvers
                 ReflectionName = null,
                 Name = "Value",
                 Type = EntryType.Member,
-                Resolver = new NullableValueResolver()
+                //Resolver = new NullableValueResolver()
             });
 
             AddEntryByExample<int?, bool>(EntryType.Member, e => e.HasValue);
@@ -55,6 +55,7 @@ namespace RediSharp.RedIL.ExternalResolvers
             ;
         }
 
+        /*
         public RedILResolver FindResolver(string reflectionName, string fullName, string name, EntryType type)
         {
             var entry = _entries.FirstOrDefault(e =>
@@ -65,6 +66,6 @@ namespace RediSharp.RedIL.ExternalResolvers
             }
 
             return entry.Resolver;
-        }
+        }*/
     }
 }
