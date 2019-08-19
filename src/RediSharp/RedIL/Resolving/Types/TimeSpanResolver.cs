@@ -1,7 +1,12 @@
+using System;
+
 namespace RediSharp.RedIL.Resolving.Types
 {
-    public class TimeSpanResolver
+    class TimeSpanResolver : TypeResolver<TimeSpan>
     {
-        
+        public TimeSpanResolver()
+        {
+            
+        }
     }
 }

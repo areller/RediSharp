@@ -5,12 +5,12 @@ namespace RediSharp.UnitTests
     [TestClass]
     public class BasicCommandsTests
     {
-        private Client _client;
+        private Client<ICursor> _client;
         
         [TestInitialize]
         public void Setup()
         {
-            _client = new Client(null);
+            _client = new Client<ICursor>(null);
         }
         
         [TestMethod]

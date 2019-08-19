@@ -1,5 +1,4 @@
 using System.Threading.Tasks;
-using RediSharp.Contracts;
 using RediSharp.RedIL.Nodes;
 using RediSharp.RedIL;
 using StackExchange.Redis;
@@ -19,7 +18,6 @@ namespace RediSharp.Lua
         }
         
         public IHandle<string, TRes> CreateHandle<TRes>(RedILNode redIL)
-            where TRes : RedResult
         {
             var script = _compiler.Compile(redIL);
             var handle = new LuaHandle<TRes>(_db, script);

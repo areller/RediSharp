@@ -1,12 +1,33 @@
+using System;
 using System.Collections.Generic;
 using ICSharpCode.Decompiler.TypeSystem;
 using RediSharp.RedIL.Nodes;
+using RediSharp.RedIL.Resolving.Types;
 
 namespace RediSharp.RedIL.Resolving
 {
     class MainResolver
     {
         public MainResolver()
+        {
+            #region Add Resolvers Here
+            
+            AddResolver(typeof(ArrayResolver<>));
+            AddResolver(typeof(DictionaryResolver<,>));
+            AddResolver(typeof(HashEntryResolver));
+            AddResolver(typeof(KeyValuePairResolver<,>));
+            AddResolver(typeof(ListResolver<>));
+            AddResolver(typeof(NullableResolver<>));
+            AddResolver(typeof(RedisKeyResolver));
+            AddResolver(typeof(RedisValueResolver));
+            AddResolver(typeof(TimeSpanResolver));
+            
+            #endregion
+        }
+
+        #region Internal
+        
+        private void AddResolver(Type resolverType)
         {
             
         }
@@ -25,5 +46,7 @@ namespace RediSharp.RedIL.Resolving
         {
             return null;
         }
+        
+        #endregion
     }
 }

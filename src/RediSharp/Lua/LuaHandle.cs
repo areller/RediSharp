@@ -2,14 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using RediSharp.Contracts;
-using RediSharp.Contracts.Enums;
 using StackExchange.Redis;
 
 namespace RediSharp.Lua
 {
     class LuaHandle<TRes> : IHandle<string, TRes>, IDisposable
-        where TRes : RedResult
     {
         #region Static
         
@@ -52,40 +49,116 @@ namespace RediSharp.Lua
             
             var result = await _db.ExecuteAsync("EVALSHA",
                 new object[] {_hash, keys.Length}.Concat(keys.Select(k => (object)k)).Concat(args.Select(a => (object)a)).ToArray());
-            var parsedResult = ParseResult(result);
-
-            return (TRes)parsedResult;
+            
+            var parsedResult = ParseResult<TRes>(result);
+            return parsedResult;
         }
 
-        private RedResult ParseResult(RedisResult nativeRedisResult)
+        private TRes ParseResult<TRes>(RedisResult nativeRedisResult)
         {
-            switch (nativeRedisResult.Type)
+            object res = null;
+            if (typeof(TRes) == typeof(string))
             {
-                case ResultType.Error:
-                    return new RedStatusResult(true, nativeRedisResult.ToString());
-                case ResultType.SimpleString:
-                    return new RedStatusResult(false, nativeRedisResult.ToString());
-                case ResultType.Integer:
-                case ResultType.BulkString:
-                    return new RedSingleResult((RedisValue)nativeRedisResult, ParseResultType(nativeRedisResult.Type));
-                case ResultType.MultiBulk:
-                    var nativeArray = (RedisResult[])nativeRedisResult;
-                    return new RedArrayResult(nativeArray.Select(nativeResult => ParseResult(nativeResult)).ToArray());
-                default: return null;
+                res = (string) nativeRedisResult;
             }
-        }
+            else if (typeof(TRes) == typeof(byte[]))
+            {
+                res = (byte[]) nativeRedisResult;
+            }
+            else if (typeof(TRes) == typeof(double))
+            {
+                res = (double) nativeRedisResult;
+            }
+            else if (typeof(TRes) == typeof(long))
+            {
+                res = (long) nativeRedisResult;
+            }
+            else if (typeof(TRes) == typeof(ulong))
+            {
+                res = (ulong) nativeRedisResult;
+            }
+            else if (typeof(TRes) == typeof(int))
+            {
+                res = (int) nativeRedisResult;
+            }
+            else if (typeof(TRes) == typeof(bool))
+            {
+                res = (bool) nativeRedisResult;
+            }
+            else if (typeof(TRes) == typeof(RedisValue))
+            {
+                res = (RedisValue) nativeRedisResult;
+            }
+            else if (typeof(TRes) == typeof(RedisKey))
+            {
+                res = (RedisKey) nativeRedisResult;
+            }
+            else if (typeof(TRes) == typeof(double?))
+            {
+                res = (double?) nativeRedisResult;
+            }
+            else if (typeof(TRes) == typeof(long?))
+            {
+                res = (long?) nativeRedisResult;
+            }
+            else if (typeof(TRes) == typeof(ulong?))
+            {
+                res = (ulong?) nativeRedisResult;
+            }
+            else if (typeof(TRes) == typeof(int?))
+            {
+                res = (int?) nativeRedisResult;
+            }
+            else if (typeof(TRes) == typeof(bool?))
+            {
+                res = (bool?) nativeRedisResult;
+            }
+            else if (typeof(TRes) == typeof(string[]))
+            {
+                res = (string[]) nativeRedisResult;
+            }
+            else if (typeof(TRes) == typeof(byte[][]))
+            {
+                res = (byte[][]) nativeRedisResult;
+            }
+            else if (typeof(TRes) == typeof(double[]))
+            {
+                res = (double[]) nativeRedisResult;
+            }
+            else if (typeof(TRes) == typeof(long[]))
+            {
+                res = (long[]) nativeRedisResult;
+            }
+            else if (typeof(TRes) == typeof(ulong[]))
+            {
+                res = (ulong[]) nativeRedisResult;
+            }
+            else if (typeof(TRes) == typeof(int[]))
+            {
+                res = (int[]) nativeRedisResult;
+            }
+            else if (typeof(TRes) == typeof(bool[]))
+            {
+                res = (bool[]) nativeRedisResult;
+            }
+            else if (typeof(TRes) == typeof(RedisValue[]))
+            {
+                res = (RedisValue[]) nativeRedisResult;
+            }
+            else if (typeof(TRes) == typeof(RedisKey[]))
+            {
+                res = (RedisKey[]) nativeRedisResult;
+            }
+            else if (typeof(TRes) == typeof(HashEntry[]))
+            {
+                //TODO: Convert to HashEntry[]
+            }
+            else
+            {
+                throw new Exception("Mismatch of type");
+            }
 
-        private RedResultType ParseResultType(ResultType nativeResultType)
-        {
-            switch (nativeResultType)
-            {
-                case ResultType.BulkString: return RedResultType.BulkString;
-                case ResultType.Error: return RedResultType.Error;
-                case ResultType.Integer: return RedResultType.Integer;
-                case ResultType.MultiBulk: return RedResultType.MultiBulk;
-                case ResultType.SimpleString: return RedResultType.SimpleString;
-                default: return RedResultType.None;
-            }
+            return (TRes) res;
         }
 
         public void Dispose()

@@ -9,7 +9,6 @@ using ICSharpCode.Decompiler;
 using ICSharpCode.Decompiler.CSharp;
 using ICSharpCode.Decompiler.CSharp.Syntax;
 using ICSharpCode.Decompiler.Metadata;
-using RediSharp.Contracts;
 using StackExchange.Redis;
 
 namespace RediSharp.CSharp
@@ -39,8 +38,7 @@ namespace RediSharp.CSharp
             _decompiler = decompiler;
         }
 
-        public DecompilationResult Decompile<TRes>(Func<ICursor, RedisValue[], RedisKey[], TRes> action)
-            where TRes : RedResult
+        public DecompilationResult Decompile<TCursor, TRes>(Func<TCursor, RedisValue[], RedisKey[], TRes> action)
         {
             var token = action.Method.MetadataToken;
             var method = MetadataTokenHelpers.TryAsEntityHandle(token);
