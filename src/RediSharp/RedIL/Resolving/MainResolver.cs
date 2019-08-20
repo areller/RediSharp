@@ -12,15 +12,17 @@ namespace RediSharp.RedIL.Resolving
         {
             #region Add Resolvers Here
             
-            AddResolver(typeof(ArrayResolver<>));
+            AddResolver(typeof(ArrayResolver));
             AddResolver(typeof(DictionaryResolver<,>));
             AddResolver(typeof(HashEntryResolver));
             AddResolver(typeof(KeyValuePairResolver<,>));
             AddResolver(typeof(ListResolver<>));
-            AddResolver(typeof(NullableResolver<>));
+            AddResolver(typeof(ListInterfaceResolver<>));
+            AddResolver(typeof(CollectionInterfaceResolver<>));
+            AddResolver(typeof(NullableResolverPack.NullableResolver<>));
             AddResolver(typeof(RedisKeyResolver));
             AddResolver(typeof(RedisValueResolver));
-            AddResolver(typeof(TimeSpanResolver));
+            AddResolver(typeof(TimeSpanResolverPack.TimeSpanResolver));
             
             #endregion
         }

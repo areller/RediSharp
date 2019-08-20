@@ -2,7 +2,7 @@ using System;
 
 namespace RediSharp.RedIL.Resolving.Attributes
 {
-    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property)]
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Constructor)]
     class RedILResolve : Attribute
     {
         private byte _resolverEnum;

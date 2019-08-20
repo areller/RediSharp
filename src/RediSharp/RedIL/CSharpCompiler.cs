@@ -8,6 +8,7 @@ using ICSharpCode.Decompiler.CSharp.Syntax.PatternMatching;
 using ICSharpCode.Decompiler.Semantics;
 using ICSharpCode.Decompiler.TypeSystem;
 using RediSharp.CSharp;
+using RediSharp.Enums;
 using RediSharp.RedIL.Enums;
 using RediSharp.RedIL.Nodes;
 using RediSharp.RedIL.Nodes.Internal;
@@ -242,7 +243,8 @@ namespace RediSharp.RedIL
                     var argVisited = CastUtilities.CastRedILNode<ExpressionNode>(arg.AcceptVisitor(this));
 
                     // In LUA, array indices start at 1
-                    if (target.DataType == DataValueType.Array && argVisited.DataType == DataValueType.Integer)
+                    if ((target.DataType == DataValueType.Array || target.DataType == DataValueType.String) &&
+                        argVisited.DataType == DataValueType.Integer)
                     {
                         if (argVisited.Type == RedILNodeType.Constant)
                         {
@@ -256,7 +258,16 @@ namespace RediSharp.RedIL
                         }
                     }
 
-                    target = new TableKeyAccessNode(target, argVisited);
+
+                    if (target.DataType == DataValueType.Array || target.DataType == DataValueType.Dictionary)
+                    {
+                        target = new TableKeyAccessNode(target, argVisited);
+                    }
+                    else if (target.DataType == DataValueType.String)
+                    {
+                        target = new CallLuaMethodNode(LuaMethod.StringSub,
+                            new List<ExpressionNode>() {target, argVisited, argVisited});
+                    }
                 }
 
                 return target;

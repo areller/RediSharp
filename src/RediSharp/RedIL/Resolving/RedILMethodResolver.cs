@@ -4,6 +4,6 @@ namespace RediSharp.RedIL.Resolving
 {
     abstract class RedILMethodResolver
     {
-        public abstract ExpressionNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments);
+        public abstract RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments);
     }
 }

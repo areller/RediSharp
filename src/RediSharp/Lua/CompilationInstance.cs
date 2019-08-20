@@ -356,6 +356,9 @@ namespace RediSharp.Lua
             {
                 switch (node.Method)
                 {
+                    case LuaMethod.StringSub:
+                        state.Write("string.sub");
+                        break;
                     case LuaMethod.StringToLower:
                         state.Write("string.lower");
                         break;
