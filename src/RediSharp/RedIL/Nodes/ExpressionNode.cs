@@ -15,5 +15,19 @@ namespace RediSharp.RedIL.Nodes
         {
             DataType = dataType;
         }
+        
+        #region Operators
+        
+        public static ExpressionNode operator -(ExpressionNode node) => UnaryExpressionNode.Create(UnaryExpressionOperator.Minus, node);
+
+        public static ExpressionNode operator +(ExpressionNode nodeA, ExpressionNode nodeB) => BinaryExpressionNode.Create(BinaryExpressionOperator.Add, nodeA, nodeB);
+        
+        public static ExpressionNode operator -(ExpressionNode nodeA, ExpressionNode nodeB) => BinaryExpressionNode.Create(BinaryExpressionOperator.Subtract, nodeA, nodeB);
+        
+        public static ExpressionNode operator *(ExpressionNode nodeA, ExpressionNode nodeB) => BinaryExpressionNode.Create(BinaryExpressionOperator.Multiply, nodeA, nodeB);
+        
+        public static ExpressionNode operator /(ExpressionNode nodeA, ExpressionNode nodeB) => BinaryExpressionNode.Create(BinaryExpressionOperator.Divide, nodeA, nodeB);
+        
+        #endregion
     }
 }

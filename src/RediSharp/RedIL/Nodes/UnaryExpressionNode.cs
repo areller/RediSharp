@@ -21,5 +21,15 @@ namespace RediSharp.RedIL.Nodes
 
         public override TReturn AcceptVisitor<TReturn, TState>(IRedILVisitor<TReturn, TState> visitor, TState state)
             => visitor.VisitUnaryExpressionNode(this, state);
+        
+        #region Static
+
+        public static UnaryExpressionNode Create(UnaryExpressionOperator op, ExpressionNode node)
+        {
+            //TODO: Handle case where node is constant
+            return new UnaryExpressionNode(op, node);
+        }
+
+        #endregion
     }
 }
