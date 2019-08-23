@@ -4,27 +4,27 @@ using RediSharp.RedIL.Enums;
 
 namespace RediSharp.RedIL.Nodes
 {
-    class CallLuaMethodNode : ExpressionNode
+    class CallBuiltinLuaMethodNode : ExpressionNode
     {
-        private static readonly Dictionary<LuaMethod, DataValueType> MethodTypeTable
-            = new Dictionary<LuaMethod, DataValueType>()
+        private static readonly Dictionary<LuaBuiltinMethod, DataValueType> MethodTypeTable
+            = new Dictionary<LuaBuiltinMethod, DataValueType>()
             {
-                { LuaMethod.StringToLower, DataValueType.String },
-                { LuaMethod.TableUnpack, DataValueType.Array }
+                { LuaBuiltinMethod.StringToLower, DataValueType.String },
+                { LuaBuiltinMethod.TableUnpack, DataValueType.Array }
             };
         
-        public LuaMethod Method { get; set; }
+        public LuaBuiltinMethod Method { get; set; }
 
         public IList<ExpressionNode> Arguments { get; set; }
 
-        public CallLuaMethodNode()
+        public CallBuiltinLuaMethodNode()
             : base(RedILNodeType.CallLuaMethod)
         {
             Arguments = new List<ExpressionNode>();
         }
 
-        public CallLuaMethodNode(
-            LuaMethod method,
+        public CallBuiltinLuaMethodNode(
+            LuaBuiltinMethod method,
             IList<ExpressionNode> arguments)
             : base(RedILNodeType.CallLuaMethod, MethodTypeTable[method])
         {
@@ -33,6 +33,6 @@ namespace RediSharp.RedIL.Nodes
         }
 
         public override TReturn AcceptVisitor<TReturn, TState>(IRedILVisitor<TReturn, TState> visitor, TState state)
-            => visitor.VisitCallLuaMethodNode(this, state);
+            => visitor.VisitCallBuiltinLuaMethodNode(this, state);
     }
 }

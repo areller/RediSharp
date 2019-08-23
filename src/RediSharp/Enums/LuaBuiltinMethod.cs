@@ -1,6 +1,6 @@
 namespace RediSharp.Enums
 {
-    enum LuaMethod
+    enum LuaBuiltinMethod
     {
         StringSub,
         StringToLower,

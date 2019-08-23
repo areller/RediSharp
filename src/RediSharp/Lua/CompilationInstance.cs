@@ -352,17 +352,17 @@ namespace RediSharp.Lua
                 return true;
             }
 
-            public bool VisitCallLuaMethodNode(CallLuaMethodNode node, CompilationState state)
+            public bool VisitCallBuiltinLuaMethodNode(CallBuiltinLuaMethodNode node, CompilationState state)
             {
                 switch (node.Method)
                 {
-                    case LuaMethod.StringSub:
+                    case LuaBuiltinMethod.StringSub:
                         state.Write("string.sub");
                         break;
-                    case LuaMethod.StringToLower:
+                    case LuaBuiltinMethod.StringToLower:
                         state.Write("string.lower");
                         break;
-                    case LuaMethod.TableUnpack:
+                    case LuaBuiltinMethod.TableUnpack:
                         state.Write("unpack");
                         break;
                     default:

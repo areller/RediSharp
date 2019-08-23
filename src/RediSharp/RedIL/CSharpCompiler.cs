@@ -265,7 +265,7 @@ namespace RediSharp.RedIL
                     }
                     else if (target.DataType == DataValueType.String)
                     {
-                        target = new CallLuaMethodNode(LuaMethod.StringSub,
+                        target = new CallBuiltinLuaMethodNode(LuaBuiltinMethod.StringSub,
                             new List<ExpressionNode>() {target, argVisited, argVisited});
                     }
                 }

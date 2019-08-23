@@ -28,7 +28,7 @@ namespace RediSharp
                         arg.DataType == DataValueType.Array
                             ? (arg.Type == RedILNodeType.ArrayTableDefinition
                                 ? (arg as ArrayTableDefinitionNode).Elements
-                                : WrapSingle(new CallLuaMethodNode(LuaMethod.TableUnpack, new ExpressionNode[] {arg})))
+                                : WrapSingle(new CallBuiltinLuaMethodNode(LuaBuiltinMethod.TableUnpack, new ExpressionNode[] {arg})))
                             : WrapSingle(arg))
                     .ToArray());
         }
