@@ -6,7 +6,7 @@ using StackExchange.Redis;
 
 namespace RediSharp.RedIL.Resolving.Types
 {
-    class DatabaseResolver : TypeResolver<IDatabase>
+    class DatabaseResolverPack
     {
         class DatabaseProxy : IDatabase
         {
@@ -1791,6 +1791,14 @@ namespace RediSharp.RedIL.Resolving.Types
             }
 
             public int Database { get; }
+        }
+        
+        public static Dictionary<Type, Type> GetMapToProxy()
+        {
+            return new Dictionary<Type, Type>()
+            {
+                { typeof(IDatabase), typeof(DatabaseProxy) }
+            };
         }
     }
 }

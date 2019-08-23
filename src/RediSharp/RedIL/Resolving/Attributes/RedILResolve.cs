@@ -21,6 +21,10 @@ namespace RediSharp.RedIL.Resolving.Attributes
             {
                 _resolverEnum = 1;
             }
+            else if (resolverType.IsSubclassOf(typeof(RedILObjectResolver)))
+            {
+                _resolverEnum = 2;
+            }
             else
             {
                 throw new RedILException($"Type '{resolverType}' is not a resolver");
@@ -34,7 +38,7 @@ namespace RediSharp.RedIL.Resolving.Attributes
         {
             if (_resolverEnum != 0)
             {
-                throw new RedILException($"Unable to resolve method resolver from member resolver attribute");
+                throw new RedILException($"Unable to resolve method resolver");
             }
             
             return Activator.CreateInstance(_resolverType, Arguments) as RedILMethodResolver;
@@ -44,10 +48,20 @@ namespace RediSharp.RedIL.Resolving.Attributes
         {
             if (_resolverEnum != 1)
             {
-                throw new RedILException($"Unable to resolve enum resolver from method resolver attribute");
+                throw new RedILException($"Unable to resolve member resolver");
             }
             
             return Activator.CreateInstance(_resolverType, Arguments) as RedILMemberResolver;
+        }
+
+        public RedILObjectResolver CreateObjectResolver()
+        {
+            if (_resolverEnum != 2)
+            {
+                throw new RedILException($"Unable to resolve object resolver");
+            }
+            
+            return Activator.CreateInstance(_resolverType, Arguments) as RedILObjectResolver;
         }
     }
 }

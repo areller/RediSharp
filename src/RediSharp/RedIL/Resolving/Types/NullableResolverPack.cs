@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using RediSharp.RedIL.Nodes;
 using RediSharp.RedIL.Resolving.Attributes;
 
@@ -25,19 +26,19 @@ namespace RediSharp.RedIL.Resolving.Types
         class NullableProxy<T>
             where T : struct
         {
-            [RedILResolve(typeof(ValueResolver))] public T Value { get; set; }
+            [RedILResolve(typeof(ValueResolver))] 
+            public T Value { get; set; }
 
             [RedILResolve(typeof(HasValueResolver))]
             public bool HasValue { get; set; }
         }
         
-        public class NullableResolver<T> : TypeResolver<Nullable<T>>
-            where T : struct
+        public static Dictionary<Type, Type> GetMapToProxy()
         {
-            public NullableResolver()
+            return new Dictionary<Type, Type>()
             {
-                Proxy<NullableProxy<T>>();
-            }
+                { typeof(Nullable<>), typeof(NullableProxy<>) }
+            };
         }
     }
 }

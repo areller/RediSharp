@@ -1,6 +1,6 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
-using Humanizer;
 using RediSharp.RedIL.Enums;
 using RediSharp.RedIL.Nodes;
 using RediSharp.RedIL.Resolving.Attributes;
@@ -13,7 +13,20 @@ namespace RediSharp.RedIL.Resolving.Types
         {
             public override ExpressionNode Resolve(Context context, ExpressionNode[] arguments, ExpressionNode[] elements)
             {
-                return null;
+                switch (arguments.Length)
+                {
+                    case 3:
+                        return (ConstantValueNode)3600 * arguments[0] + (ConstantValueNode)60 * arguments[1] + arguments[2];
+                    case 4:
+                        return (ConstantValueNode) 86400 * arguments[0] + (ConstantValueNode) 3600 * arguments[1] +
+                               (ConstantValueNode) 60 * arguments[2] + arguments[3];
+                    case 5:
+                        return (ConstantValueNode) 86400 * arguments[0] + (ConstantValueNode) 3600 * arguments[1] +
+                               (ConstantValueNode) 60 * arguments[2] + arguments[3] +
+                               (ConstantValueNode) 0.001 * arguments[4];
+                    default:
+                        return null;
+                }
             }
         }
         
@@ -108,12 +121,12 @@ namespace RediSharp.RedIL.Resolving.Types
             public static TimeSpan FromSeconds(double value) => TimeSpan.FromSeconds(value);
         }
 
-        public class TimeSpanResolver : TypeResolver<TimeSpan>
+        public static Dictionary<Type, Type> GetMapToProxy()
         {
-            public TimeSpanResolver()
+            return new Dictionary<Type, Type>()
             {
-                Proxy<TimeSpanProxy>();
-            }
+                { typeof(TimeSpan), typeof(TimeSpanProxy) }
+            };
         }
     }
 }
