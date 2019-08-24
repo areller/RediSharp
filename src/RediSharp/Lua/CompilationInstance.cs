@@ -13,10 +13,30 @@ namespace RediSharp.Lua
     class CompilationInstance
     {
         #region Function Store
-        
+
         private static readonly Dictionary<string, string> _functions = new Dictionary<string, string>()
         {
-            { "count_tbl", "local {{func_name}} = function (tbl) local count = 0; for _ in pairs(tbl) do count = count + 1; end return count; end" }
+            {"tbl_has_key", "local {{func_name}} = function(tbl, key) return tbl[key] ~= nil end"},
+            {
+                "tbl_count",
+                "local {{func_name}} = function(tbl) local count = 0; for _ in pairs(tbl) do count = count + 1; end return count; end"
+            },
+            {
+                "tbl_keys",
+                "local {{func_name} = function(tbl) local keys = {}; for k, _ in pairs(tbl) do table.insert(keys, k); end return keys; end"
+            },
+            {
+                "tbl_values",
+                "local {{func_name}} = function(tbl) local values = {}; for _, v in pairs(tbl) do table.insert(values, v); end return values; end"
+            },
+            {
+                "tbl_remove",
+                "local {{func_name}} = function(tbl, key) if tbl[key] == nil then return false; end tbl[key] = nil; return true; end"
+            },
+            {
+                "tbl_clear",
+                "local {{func_name}} = function(tbl) for k, _ in pairs(tbl) do tbl[k] = nil; end end"
+            }
         };
         
         #endregion
@@ -29,7 +49,11 @@ namespace RediSharp.Lua
 
             private int _lastTempId;
 
+            private Dictionary<string, string> _functionPointers;
+
             public StringBuilder Builder { get; }
+
+            public List<string> FunctionDefinitions { get; }
 
             public CompilationState(RootNode root)
             {
@@ -48,9 +72,33 @@ namespace RediSharp.Lua
                         }
                     }
                 }
+
+                FunctionDefinitions = new List<string>();
+                _functionPointers = new Dictionary<string, string>();
             }
 
-            public int GetNewId() => Interlocked.Increment(ref _lastTempId);
+            public string GetFunctionId(string functionName)
+            {
+                if (!_functionPointers.TryGetValue(functionName, out var pointer))
+                {
+                    if (!_functions.TryGetValue(functionName, out var functionDefTemplate))
+                    {
+                        throw new LuaCompilationException($"Could not find lua function '{functionName}'");
+                    }
+
+                    pointer = GetNewId();
+                    FunctionDefinitions.Add(functionDefTemplate.Replace("{{func_name}}", pointer));
+                    _functionPointers.Add(functionName, pointer);
+                }
+
+                return pointer;
+            }
+
+            public string GetNewId()
+            {
+                var idNum = Interlocked.Increment(ref _lastTempId);
+                return $"_{idNum}";
+            }
 
             public void Ident()
             {
@@ -391,7 +439,13 @@ namespace RediSharp.Lua
 
             public bool VisitCallLuaFunctionNode(CallLuaFunctionNode node, CompilationState state)
             {
-                throw new NotImplementedException();
+                var pointer = state.GetFunctionId(node.Name);
+                state.Write(pointer);
+                state.Write("(");
+                WriteArguments(state, node.Arguments);
+                state.Write(")");
+
+                return true;
             }
 
             public bool VisitCursorNode(CursorNode node, CompilationState state)
@@ -590,10 +644,7 @@ namespace RediSharp.Lua
                 state.Write('"');
             }
 
-            private string CreateTemporaryIdentifier(CompilationState state)
-            {
-                return $"_{state.GetNewId()}";
-            }
+            private string CreateTemporaryIdentifier(CompilationState state) => state.GetNewId();
         }
 
         private RedILNode _root;
@@ -612,6 +663,11 @@ namespace RediSharp.Lua
         public string Compile()
         {
             _root.AcceptVisitor(_visitor, _state);
+            // Inserting functions on top
+            foreach (var funcDef in _state.FunctionDefinitions)
+            {
+                _state.Builder.Insert(0, funcDef + Environment.NewLine);
+            }
             return _state.Builder.ToString();
         }
     }

@@ -24,7 +24,7 @@ namespace RediSharp.RedIL.Resolving.Types
         {
             public override ExpressionNode Resolve(Context context, ExpressionNode caller)
             {
-                return new CallLuaFunctionNode("count_tbl", DataValueType.Integer, new List<ExpressionNode>() {caller});
+                return new CallLuaFunctionNode("tbl_count", DataValueType.Integer, new List<ExpressionNode>() {caller});
             }
         }
 
@@ -41,6 +41,55 @@ namespace RediSharp.RedIL.Resolving.Types
                     var arg = arguments[0] as DictionaryTableDefinitionNode;
                     return new AssignNode(new TableKeyAccessNode(caller, arg.Elements[0].Value, DataValueType.Unknown), arg.Elements[1].Value);
                 }
+            }
+        }
+
+        class ClearResolver : RedILMethodResolver
+        {
+            public override RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
+            {
+                return new CallLuaFunctionNode("tbl_clear", DataValueType.Unknown, new List<ExpressionNode>() {caller});
+            }
+        }
+
+        class ContainsKeyResolver : RedILMethodResolver
+        {
+            public override RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
+            {
+                return BinaryExpressionNode.Create(BinaryExpressionOperator.NotEqual,
+                    new TableKeyAccessNode(caller, arguments[0], DataValueType.Unknown), new NilNode());
+            }
+        }
+
+        class RemoveResolver : RedILMethodResolver
+        {
+            public override RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
+            {
+                if (context.IsInsideStatement())
+                {
+                    return new AssignNode(new TableKeyAccessNode(caller, arguments[0], DataValueType.Unknown), new NilNode());
+                }
+                else
+                {
+                    return new CallLuaFunctionNode("tbl_remove", DataValueType.Boolean,
+                        new List<ExpressionNode>() {caller, arguments[0]});
+                }
+            }
+        }
+
+        class KeysValuesResolver : RedILMemberResolver
+        {
+            private string _prop;
+
+            public KeysValuesResolver(object arg)
+            {
+                _prop = (string) arg;
+            }
+
+            public override ExpressionNode Resolve(Context context, ExpressionNode caller)
+            {
+                return new CallLuaFunctionNode($"tbl_{_prop}", DataValueType.Array,
+                    new List<ExpressionNode>() {caller});
             }
         }
         
@@ -61,6 +110,7 @@ namespace RediSharp.RedIL.Resolving.Types
             {
             }
 
+            [RedILResolve(typeof(ClearResolver))]
             public void Clear()
             {
             }
@@ -82,8 +132,10 @@ namespace RediSharp.RedIL.Resolving.Types
             {
             }
 
+            [RedILResolve(typeof(ContainsKeyResolver))]
             public bool ContainsKey(K key) => default;
 
+            [RedILResolve(typeof(RemoveResolver))]
             public bool Remove(K key) => default;
 
             public bool TryGetValue(K key, out V value)
@@ -97,7 +149,10 @@ namespace RediSharp.RedIL.Resolving.Types
                 set => throw new NotImplementedException();
             }
 
+            [RedILResolve(typeof(KeysValuesResolver), "keys")]
             public ICollection<K> Keys { get; }
+            
+            [RedILResolve(typeof(KeysValuesResolver), "values")]
             public ICollection<V> Values { get; }
         }
         

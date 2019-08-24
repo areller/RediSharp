@@ -17,5 +17,15 @@ namespace RediSharp.RedIL.Resolving
             Root = root;
             CurrentExpression = currentExpr;
         }
+
+        public bool IsInsideStatement()
+        {
+            return (CurrentExpression?.Parent?.NodeType ?? NodeType.Unknown) == NodeType.Statement;
+        }
+
+        public bool IsInsideExpression()
+        {
+            return (CurrentExpression?.Parent?.NodeType ?? NodeType.Unknown) == NodeType.Expression;
+        }
     }
 }
