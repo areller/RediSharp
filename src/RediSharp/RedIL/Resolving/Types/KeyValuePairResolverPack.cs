@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using RediSharp.RedIL.Enums;
 using RediSharp.RedIL.Nodes;
 using RediSharp.RedIL.Resolving.Attributes;
 
@@ -9,12 +10,33 @@ namespace RediSharp.RedIL.Resolving.Types
     {
         class ConstructorResolver : RedILObjectResolver
         {
-            public override ExpressionNode Resolve(Context context, ExpressionNode[] arguments, ExpressionNode[] elements)
+            public override ExpressionNode Resolve(Context context, ExpressionNode[] arguments,
+                ExpressionNode[] elements)
             {
-                throw new NotImplementedException();
+                return new DictionaryTableDefinitionNode(new List<KeyValuePair<ExpressionNode, ExpressionNode>>()
+                {
+                    new KeyValuePair<ExpressionNode, ExpressionNode>((ConstantValueNode) "key", arguments[0]),
+                    new KeyValuePair<ExpressionNode, ExpressionNode>((ConstantValueNode) "value", arguments[1])
+                });
+            }
+        }
+
+        class KVAccessResolver : RedILMemberResolver
+        {
+            private string _key;
+
+            public KVAccessResolver(object arg)
+            {
+                _key = (string) arg;
+            }
+            
+            public override ExpressionNode Resolve(Context context, ExpressionNode caller)
+            {
+                return new TableKeyAccessNode(caller, (ConstantValueNode) _key, context.Compiler.ResolveExpressionType(context.CurrentExpression));
             }
         }
         
+        [RedILDataType(DataValueType.KVPair)]
         public class KeyValuePairProxy<K, V>
         {
             [RedILResolve(typeof(ConstructorResolver))]
@@ -23,14 +45,10 @@ namespace RediSharp.RedIL.Resolving.Types
                 
             }
 
-            [RedILResolve(typeof(ConstructorResolver))]
-            public KeyValuePairProxy(K key, V value, int[] args)
-            {
-                
-            }
-
+            [RedILResolve(typeof(KVAccessResolver), "key")]
             public K Key { get; }
 
+            [RedILResolve(typeof(KVAccessResolver), "value")]
             public V Value { get; }
         }
         

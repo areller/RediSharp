@@ -11,12 +11,14 @@ namespace RediSharp.RedIL.Resolving.Types
     {
         class ConstructorResolver : RedILObjectResolver
         {
-            public override ExpressionNode Resolve(Context context, ExpressionNode[] arguments, ExpressionNode[] elements)
+            public override ExpressionNode Resolve(Context context, ExpressionNode[] arguments,
+                ExpressionNode[] elements)
             {
                 switch (arguments.Length)
                 {
                     case 3:
-                        return (ConstantValueNode)3600 * arguments[0] + (ConstantValueNode)60 * arguments[1] + arguments[2];
+                        return (ConstantValueNode) 3600 * arguments[0] + (ConstantValueNode) 60 * arguments[1] +
+                               arguments[2];
                     case 4:
                         return (ConstantValueNode) 86400 * arguments[0] + (ConstantValueNode) 3600 * arguments[1] +
                                (ConstantValueNode) 60 * arguments[2] + arguments[3];
@@ -29,16 +31,16 @@ namespace RediSharp.RedIL.Resolving.Types
                 }
             }
         }
-        
+
         class FromMethodResolver : RedILMethodResolver
         {
             private double _factor;
-            
+
             public FromMethodResolver(object factorArg)
             {
                 _factor = (double) factorArg;
             }
-            
+
             public override RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
             {
                 var arg = arguments.First();
@@ -73,6 +75,7 @@ namespace RediSharp.RedIL.Resolving.Types
             }
         }
 
+        [RedILDataType(DataValueType.Float)]
         class TimeSpanProxy
         {
             [RedILResolve(typeof(ConstructorResolver))]
@@ -89,35 +92,35 @@ namespace RediSharp.RedIL.Resolving.Types
             public TimeSpanProxy(int days, int hours, int minutes, int seconds, int milliseconds)
             {
             }
-            
+
             [RedILResolve(typeof(ValueResolver), (double) 1 / 86400)]
             public double TotalDays { get; }
 
             [RedILResolve(typeof(ValueResolver), (double) 1 / 3600)]
             public double TotalHours { get; }
 
-            [RedILResolve(typeof(ValueResolver), 1000)]
+            [RedILResolve(typeof(ValueResolver), (double) 1000)]
             public double TotalMilliseconds { get; }
 
             [RedILResolve(typeof(ValueResolver), (double) 1 / 60)]
             public double TotalMinutes { get; }
 
-            [RedILResolve(typeof(ValueResolver), 1)]
+            [RedILResolve(typeof(ValueResolver), (double) 1)]
             public double TotalSeconds { get; }
 
-            [RedILResolve(typeof(FromMethodResolver), 86400)]
+            [RedILResolve(typeof(FromMethodResolver), (double) 86400)]
             public static TimeSpan FromDays(double value) => TimeSpan.FromDays(value);
 
-            [RedILResolve(typeof(FromMethodResolver), 3600)]
+            [RedILResolve(typeof(FromMethodResolver), (double) 3600)]
             public static TimeSpan FromHours(double value) => TimeSpan.FromHours(value);
 
             [RedILResolve(typeof(FromMethodResolver), (double) 1 / 1000)]
             public static TimeSpan FromMilliseconds(double value) => TimeSpan.FromMilliseconds(value);
 
-            [RedILResolve(typeof(FromMethodResolver), 60)]
+            [RedILResolve(typeof(FromMethodResolver), (double) 60)]
             public static TimeSpan FromMinutes(double value) => TimeSpan.FromMinutes(value);
 
-            [RedILResolve(typeof(FromMethodResolver), 1)]
+            [RedILResolve(typeof(FromMethodResolver), (double) 1)]
             public static TimeSpan FromSeconds(double value) => TimeSpan.FromSeconds(value);
         }
 
@@ -125,7 +128,7 @@ namespace RediSharp.RedIL.Resolving.Types
         {
             return new Dictionary<Type, Type>()
             {
-                { typeof(TimeSpan), typeof(TimeSpanProxy) }
+                {typeof(TimeSpan), typeof(TimeSpanProxy)}
             };
         }
     }

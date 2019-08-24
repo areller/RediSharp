@@ -17,7 +17,7 @@ namespace RediSharp.Lua
             _compiler = new LuaCompiler();
         }
         
-        public IHandle<string, TRes> CreateHandle<TRes>(RedILNode redIL)
+        public IHandle<string, TRes> CreateHandle<TRes>(RootNode redIL)
         {
             var script = _compiler.Compile(redIL);
             var handle = new LuaHandle<TRes>(_db, script);

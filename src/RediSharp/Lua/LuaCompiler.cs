@@ -12,7 +12,7 @@ namespace RediSharp.Lua
 
         }
 
-        public string Compile(RedILNode tree)
+        public string Compile(RootNode tree)
         {
             var instance = new CompilationInstance(tree);
             return instance.Compile();

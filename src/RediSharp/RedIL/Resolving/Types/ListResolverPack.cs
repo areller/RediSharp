@@ -1,26 +1,56 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using RediSharp.Enums;
+using RediSharp.RedIL.Enums;
+using RediSharp.RedIL.Nodes;
+using RediSharp.RedIL.Resolving.Attributes;
 
 namespace RediSharp.RedIL.Resolving.Types
 {
     class ListResolverPack
     {
+        class ConstructorResolver : RedILObjectResolver
+        {
+            public override ExpressionNode Resolve(Context context, ExpressionNode[] arguments, ExpressionNode[] elements)
+            {
+                return new ArrayTableDefinitionNode(elements.ToList());
+            }
+        }
+
+        class AddResolver : RedILMethodResolver
+        {
+            public override RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
+            {
+                return new CallBuiltinLuaMethodNode(LuaBuiltinMethod.TableInsert,
+                    new List<ExpressionNode>() {caller, arguments[0]});
+            }
+        }
+
+        class CountResolver : RedILMemberResolver
+        {
+            public override ExpressionNode Resolve(Context context, ExpressionNode caller)
+            {
+                return new CallBuiltinLuaMethodNode(LuaBuiltinMethod.TableGetN, new List<ExpressionNode>() {caller});
+            }
+        }
+        
+        [RedILDataType(DataValueType.Array)]
         class ListProxy<T> : IList<T>
         {
-            public IEnumerator<T> GetEnumerator()
+            [RedILResolve(typeof(ConstructorResolver))]
+            public ListProxy()
             {
-                throw new System.NotImplementedException();
             }
 
-            IEnumerator IEnumerable.GetEnumerator()
-            {
-                return GetEnumerator();
-            }
+            public IEnumerator<T> GetEnumerator() => default;
 
+            IEnumerator IEnumerable.GetEnumerator() => default;
+
+            [RedILResolve(typeof(AddResolver))]
             public void Add(T item)
             {
-                throw new System.NotImplementedException();
             }
 
             public void Clear()
@@ -43,6 +73,7 @@ namespace RediSharp.RedIL.Resolving.Types
                 throw new System.NotImplementedException();
             }
 
+            [RedILResolve(typeof(CountResolver))]
             public int Count { get; }
             public bool IsReadOnly { get; }
 

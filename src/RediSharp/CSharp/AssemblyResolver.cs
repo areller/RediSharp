@@ -1,22 +1,27 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
+using System.Threading;
 using ICSharpCode.Decompiler.Metadata;
 
 namespace RediSharp.CSharp
 {
     class AssemblyResolver : IAssemblyResolver
     {
+        private ReaderWriterLockSlim _locker;
+        
         private Dictionary<string, Assembly> _references;
 
         private Dictionary<string, Assembly> _referencesByName;
         
         public AssemblyResolver(Assembly rootAssembly, Assembly callingAssembly)
         {
+            _locker = new ReaderWriterLockSlim();
             _references = new Dictionary<string, Assembly>();
             _referencesByName = new Dictionary<string, Assembly>();
             
@@ -41,11 +46,7 @@ namespace RediSharp.CSharp
                 if (_references.ContainsKey(top.FullName)) continue;
 
                 _references[top.FullName] = top;
-                var name = top.GetName().Name;
-                if (!_referencesByName.ContainsKey(name))
-                {
-                    _referencesByName[name] = top;
-                }
+                _referencesByName[top.GetName().Name] = top;
 
                 var refs = top.GetReferencedAssemblies();
                 if (refs != null)
@@ -65,20 +66,55 @@ namespace RediSharp.CSharp
             }
         }
 
-        public PEFile Resolve(IAssemblyReference reference)
+        public void LoadAssembly(Assembly assembly)
         {
-            Assembly asm;
-            if (!_references.TryGetValue(reference.FullName, out asm))
+            bool exists;
+            _locker.EnterReadLock();
+            try
             {
-                if (!_referencesByName.TryGetValue(reference.Name, out asm))
+                exists = _references.ContainsKey(assembly.FullName);
+            }
+            finally
+            {
+                _locker.ExitReadLock();
+            }
+
+            if (!exists)
+            {
+                _locker.EnterWriteLock();
+                try
                 {
-                    return null;
-                    //throw new Exception($"Assembly {reference.FullName} could not be resolved");
+                    DFSDependencies(assembly);
+                }
+                finally
+                {
+                    _locker.ExitWriteLock();
                 }
             }
-            
-            var file = asm.Location;
-            return new PEFile(file, new FileStream(file, FileMode.Open, FileAccess.Read), PEStreamOptions.Default, MetadataReaderOptions.Default);
+        }
+
+        public PEFile Resolve(IAssemblyReference reference)
+        {
+            _locker.EnterReadLock();
+            try
+            {
+                Assembly asm;
+                if (!_references.TryGetValue(reference.FullName, out asm))
+                {
+                    if (!_referencesByName.TryGetValue(reference.Name, out asm))
+                    {
+                        throw new DecompilationException($"Reference {reference.Name} could not be found");
+                    }
+                }
+
+                var file = asm.Location;
+                return new PEFile(file, new FileStream(file, FileMode.Open, FileAccess.Read), PEStreamOptions.Default,
+                    MetadataReaderOptions.Default);
+            }
+            finally
+            {
+                _locker.ExitReadLock();
+            }
         }
 
         public PEFile ResolveModule(PEFile mainModule, string moduleName)

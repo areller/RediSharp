@@ -6,18 +6,7 @@ namespace RediSharp.RedIL.Nodes
 {
     class CallRedisMethodNode : ExpressionNode
     {
-        private static readonly Dictionary<RedisCommand, DataValueType> CommandTypeTable
-            = new Dictionary<RedisCommand, DataValueType>()
-            {
-                { RedisCommand.Get, DataValueType.String },
-                { RedisCommand.Set, DataValueType.Boolean },
-                { RedisCommand.HGet, DataValueType.String },
-                { RedisCommand.HMGet, DataValueType.Array },
-                { RedisCommand.HSet, DataValueType.Boolean },
-                { RedisCommand.HGetAll, DataValueType.Array }
-            };
-
-        public RedisCommand Method { get; set; }
+        public string Method { get; set; }
 
         public ExpressionNode Caller { get; set; }
 
@@ -30,10 +19,11 @@ namespace RediSharp.RedIL.Nodes
         }
 
         public CallRedisMethodNode(
-            RedisCommand method,
+            string method,
+            DataValueType type,
             ExpressionNode caller,
             IList<ExpressionNode> arguments)
-            : base(RedILNodeType.CallRedisMethod, CommandTypeTable[method])
+            : base(RedILNodeType.CallRedisMethod, type)
         {
             Method = method;
             Caller = caller;

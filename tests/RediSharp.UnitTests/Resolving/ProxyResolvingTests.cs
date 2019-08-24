@@ -1,6 +1,10 @@
 using System.Linq;
-using ICSharpCode.Decompiler.CSharp.Syntax;
+using System.Reflection;
+using FluentAssertions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using RediSharp.CSharp;
+using RediSharp.RedIL;
+using RediSharp.RedIL.Enums;
 using RediSharp.RedIL.Nodes;
 using RediSharp.RedIL.Resolving;
 using RediSharp.RedIL.Resolving.Attributes;
@@ -43,6 +47,7 @@ namespace RediSharp.UnitTests.Resolving
             }
         }
         
+        [RedILDataType(DataValueType.Integer)]
         class FooProxy
         {
             [RedILResolve(typeof(ConstructorResolver))]
@@ -90,18 +95,66 @@ namespace RediSharp.UnitTests.Resolving
         
         #endregion
         
-        private static MainResolver _mainResolver;
+        private static ActionDecompiler _actionDecompiler;
+
+        private static CSharpCompiler _csharpCompiler;
         
         [ClassInitialize]
         public static void ClassSetup(TestContext ctx)
         {
-            _mainResolver.AddResolver(typeof(Foo), typeof(FooProxy));
+            _actionDecompiler = new ActionDecompiler(Assembly.GetCallingAssembly());
+            _csharpCompiler = new CSharpCompiler();
+            _csharpCompiler.MainResolver.AddResolver(typeof(Foo), typeof(FooProxy));
         }
 
         [TestMethod]
         public void ShouldResolveConstructor()
         {
-            
+            var csharp = _actionDecompiler.Decompile<ICursor, bool>((cursor, args, keys) =>
+            {
+                var foo1 = new Foo();
+                var foo2 = new Foo(3);
+                return true;
+            });
+            var redIL = _csharpCompiler.Compile(csharp) as RootNode;
+            var block = redIL.Body as BlockNode;
+            block.Children.Count.Should().Be(3);
+            var varDec = block.Children.First() as VariableDeclareNode;
+            varDec.Value.Should().BeEquivalentTo(new ConstantValueNode(DataValueType.Integer, 0));
+            varDec = block.Children.Skip(1).First() as VariableDeclareNode;
+            varDec.Value.Should().BeEquivalentTo(new ConstantValueNode(DataValueType.Integer, 3));
+        }
+
+        [TestMethod]
+        public void ShouldResolveMember()
+        {
+            var csharp = _actionDecompiler.Decompile<ICursor, int>((cursor, args, keys) =>
+            {
+                var foo = new Foo(17);
+                return foo.Number;
+            });
+            var redIL = _csharpCompiler.Compile(csharp) as RootNode;
+            var block = redIL.Body as BlockNode;
+            block.Children.Count.Should().Be(2);
+            var dec = block.Children.First() as VariableDeclareNode;
+            var ret = block.Children.Last() as ReturnNode;
+            ret.Value.Should().BeEquivalentTo(new IdentifierNode(dec.Name, DataValueType.Integer));
+        }
+
+        [TestMethod]
+        public void ShouldResolveMethod()
+        {
+            var csharp = _actionDecompiler.Decompile<ICursor, bool>((cursor, args, keys) =>
+            {
+                var foo = new Foo();
+                foo.SetNumber(10);
+                return true;
+            });
+            var redIL = _csharpCompiler.Compile(csharp) as RootNode;
+            var block = redIL.Body as BlockNode;
+            block.Children.Count.Should().Be(3);
+            var assign = block.Children.Skip(1).First() as AssignNode;
+            assign.Right.Should().BeEquivalentTo(new ConstantValueNode(DataValueType.Integer, 10));
         }
     }
 }

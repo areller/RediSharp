@@ -20,21 +20,30 @@ namespace RediSharp.RedIL
 {
     class CSharpCompiler
     {
-        private MainResolver _mainResolver;
+        public MainResolver MainResolver { get; }
         
         class AstVisitor : IAstVisitor<RedILNode>
         {
+            
             private CSharpCompiler _compiler;
-
+            
             private DecompilationResult _csharp;
 
             private MainResolver _resolver;
+
+            private HashSet<string> _identifiers;
+
+            private RootNode _root;
 
             public AstVisitor(CSharpCompiler compiler, DecompilationResult csharp)
             {
                 _compiler = compiler;
                 _csharp = csharp;
-                _resolver = _compiler._mainResolver;
+                _resolver = _compiler.MainResolver;
+                _identifiers = new HashSet<string>();
+                _identifiers.Add(csharp.ArgumentsVariableName);
+                _identifiers.Add(csharp.CursorVariableName);
+                _identifiers.Add(csharp.KeysVariableName);
             }
 
             /*
@@ -46,8 +55,7 @@ namespace RediSharp.RedIL
 
             public RedILNode VisitArrayCreateExpression(ArrayCreateExpression arrayCreateExpression)
             {
-                return new ArrayTableDefinitionNode(arrayCreateExpression.Initializer.Elements.Select(elem =>
-                    CastUtilities.CastRedILNode<ExpressionNode>(elem.AcceptVisitor(this))).ToList());
+                return VisitArrayInitializerExpression(arrayCreateExpression.Initializer);
             }
 
             public RedILNode VisitAsExpression(AsExpression asExpression)
@@ -87,8 +95,30 @@ namespace RediSharp.RedIL
 
             public RedILNode VisitBlockStatement(BlockStatement blockStatement)
             {
-                return new BlockNode(blockStatement.Children.Select(child => child.AcceptVisitor(this))
-                    .Where(child => child.Type != RedILNodeType.Empty).ToList());
+                var block = new BlockNode();
+                
+                bool init = true;
+                if (_root == null)
+                {
+                    init = false;
+                    _root = new RootNode(block) {Identifiers = _identifiers};
+                }
+
+                var children = blockStatement.Children
+                    .SelectMany(child => FlattenImplicitBlocks(child.AcceptVisitor(this)))
+                    .Where(child => child.Type != RedILNodeType.Empty);
+
+                foreach (var child in children)
+                {
+                    block.Children.Add(child);
+                }
+
+                if (!init)
+                {
+                    return _root;
+                }
+
+                return block;
             }
 
             public RedILNode VisitBreakStatement(BreakStatement breakStatement)
@@ -162,13 +192,12 @@ namespace RediSharp.RedIL
 
             public RedILNode VisitForeachStatement(ForeachStatement foreachStatement)
             {
-                //TODO: Find how to handle for each loops over dictionaries
-                // In case of for each over arrays, there is a 1=>1 map between the Lua variable and the C# variable,
-                // In for each over dictionary, one C# variable (KeyValuePair) maps to 2 Lua variables
-                var cursorType = ExtractTypeFromAnnontations(foreachStatement.Annotations);
-                return new IteratorLoopNode(cursorType, foreachStatement.VariableName,
-                    CastUtilities.CastRedILNode<ExpressionNode>(foreachStatement.InExpression.AcceptVisitor(this)),
-                    CastUtilities.CastRedILNode<BlockNode>(foreachStatement.EmbeddedStatement.AcceptVisitor(this)));
+                var over = CastUtilities.CastRedILNode<ExpressionNode>(
+                    foreachStatement.InExpression.AcceptVisitor(this));
+                var body = CastUtilities.CastRedILNode<BlockNode>(
+                    foreachStatement.EmbeddedStatement.AcceptVisitor(this));
+
+                return new IteratorLoopNode(foreachStatement.VariableName, over, body);
             }
 
             public RedILNode VisitForStatement(ForStatement forStatement)
@@ -217,7 +246,7 @@ namespace RediSharp.RedIL
                     return new CursorNode();
                 }
 
-                var resType = ResolveExpressionType(identifierExpression);
+                var resType = _compiler.ResolveExpressionType(identifierExpression);
                 return new IdentifierNode(identifierExpression.Identifier, resType);
             }
 
@@ -238,6 +267,7 @@ namespace RediSharp.RedIL
             public RedILNode VisitIndexerExpression(IndexerExpression indexerExpression)
             {
                 var target = CastUtilities.CastRedILNode<ExpressionNode>(indexerExpression.Target.AcceptVisitor(this));
+                var type = _compiler.ResolveExpressionType(indexerExpression);
                 foreach (var arg in indexerExpression.Arguments)
                 {
                     var argVisited = CastUtilities.CastRedILNode<ExpressionNode>(arg.AcceptVisitor(this));
@@ -261,7 +291,7 @@ namespace RediSharp.RedIL
 
                     if (target.DataType == DataValueType.Array || target.DataType == DataValueType.Dictionary)
                     {
-                        target = new TableKeyAccessNode(target, argVisited);
+                        target = new TableKeyAccessNode(target, argVisited, type);
                     }
                     else if (target.DataType == DataValueType.String)
                     {
@@ -308,7 +338,7 @@ namespace RediSharp.RedIL
 
                 var isStatic = memberReference.Target is TypeReferenceExpression;
                 
-                var invocRes = GetInvocationResolveResult(invocationExpression);
+                var invocRes = _compiler.GetInvocationResolveResult(invocationExpression);
                 var resolver = _resolver.ResolveMethod(isStatic, invocRes.DeclaringType,
                     memberReference.MemberName, invocRes.Parameters.ToArray());
 
@@ -319,7 +349,7 @@ namespace RediSharp.RedIL
                 var arguments = invocationExpression.Arguments
                     .Select(arg => CastUtilities.CastRedILNode<ExpressionNode>(arg.AcceptVisitor(this))).ToArray();
 
-                return resolver.Resolve(GetContext(), caller, arguments);
+                return resolver.Resolve(GetContext(invocationExpression), caller, arguments);
             }
 
             public RedILNode VisitMemberReferenceExpression(MemberReferenceExpression memberReferenceExpression)
@@ -339,7 +369,7 @@ namespace RediSharp.RedIL
 
                 var caller = isStatic ? null : CastUtilities.CastRedILNode<ExpressionNode>(memberReferenceExpression.Target.AcceptVisitor(this));
 
-                return resolver.Resolve(GetContext(), caller);
+                return resolver.Resolve(GetContext(memberReferenceExpression), caller);
             }
 
             public RedILNode VisitNewLine(NewLineNode newLineNode)
@@ -380,7 +410,7 @@ namespace RediSharp.RedIL
                     CastUtilities.CastRedILNode<ExpressionNode>(unaryOperatorExpression.Expression.AcceptVisitor(this));
                 if (OperatorUtilities.IsIncrement(unaryOperatorExpression.Operator))
                 {
-                    if (unaryOperatorExpression.NodeType != NodeType.Statement)
+                    if (unaryOperatorExpression.Parent.NodeType != NodeType.Statement)
                     {
                         throw new RedILException($"Incremental operators can only be used within statements");
                     }
@@ -427,6 +457,7 @@ namespace RediSharp.RedIL
 
             public RedILNode VisitVariableInitializer(VariableInitializer variableInitializer)
             {
+                _identifiers.Add(variableInitializer.Name);
                 return new VariableDeclareNode(variableInitializer.Name,
                     variableInitializer.Initializer != null
                         ? CastUtilities.CastRedILNode<ExpressionNode>(
@@ -454,7 +485,7 @@ namespace RediSharp.RedIL
             
             public RedILNode VisitObjectCreateExpression(ObjectCreateExpression objectCreateExpression)
             {
-                var invocRes = GetInvocationResolveResult(objectCreateExpression);
+                var invocRes = _compiler.GetInvocationResolveResult(objectCreateExpression);
                 var resolver = _resolver.ResolveConstructor(invocRes.DeclaringType, invocRes.Parameters.ToArray());
 
                 var args = objectCreateExpression.Arguments.Select(arg =>
@@ -463,16 +494,16 @@ namespace RediSharp.RedIL
                 var initializerElements = objectCreateExpression.Initializer.Elements
                     .Select(elem => CastUtilities.CastRedILNode<ExpressionNode>(elem.AcceptVisitor(this))).ToArray();
 
-                return resolver.Resolve(GetContext(), args.ToArray(), initializerElements);
+                return resolver.Resolve(GetContext(objectCreateExpression), args.ToArray(), initializerElements);
             }
 
             #endregion
 
             #region Private
 
-            private Context GetContext()
+            private Context GetContext(Expression currentExpr)
             {
-                return null;
+                return new Context(_compiler, _root, currentExpr);
             }
             
             private BinaryExpressionNode CreateBinaryExpression(BinaryExpressionOperator op, ExpressionNode left,
@@ -555,48 +586,28 @@ namespace RediSharp.RedIL
                 return new UnaryExpressionNode(UnaryExpressionOperator.Not, expr);
             }
 
-            #region Types
-            
-            private DataValueType ResolveExpressionType(Expression expr)
-                => ExtractTypeFromAnnontations(expr.Annotations);
-
-            private DataValueType ExtractTypeFromAnnontations(IEnumerable<object> annontations)
+            private IEnumerable<RedILNode> FlattenImplicitBlocks(RedILNode node)
             {
-                var resType = DataValueType.Unknown;
-                var ilResolveResult =
-                    annontations.FirstOrDefault(annot => annot is ILVariableResolveResult) as ILVariableResolveResult;
-
-                if (ilResolveResult != null)
+                var stack = new Stack<RedILNode>();
+                stack.Push(node);
+                while (stack.Count > 0)
                 {
-                    if (ilResolveResult.Type.Kind != TypeKind.Array)
+                    var top = stack.Pop();
+                    var topAsBlock = top as BlockNode;
+                    if (topAsBlock is null || topAsBlock.Explicit)
                     {
-                        var type = Type.GetType(ilResolveResult.Type.ReflectionName);
-                        resType = TypeUtilities.GetValueType(type);
+                        yield return top;
                     }
                     else
                     {
-                        //TODO: Handle list/dictionary types
-                        resType = DataValueType.Array;
+                        var children = topAsBlock.Children.Reverse();
+                        foreach (var child in children)
+                        {
+                            stack.Push(child);
+                        }
                     }
                 }
-
-                return resType;
             }
-
-            private IParameterizedMember GetInvocationResolveResult(Expression expr)
-            {
-                var invocResult = expr.Annotations
-                    .FirstOrDefault(annot => annot is CSharpInvocationResolveResult) as CSharpInvocationResolveResult;
-
-                if (invocResult is null)
-                {
-                    throw new RedILException($"Unable to get invocation resolve from '{expr}'");
-                }
-
-                return invocResult.Member;
-            }
-
-            #endregion
 
             #endregion
 
@@ -980,7 +991,11 @@ namespace RediSharp.RedIL
 
             public RedILNode VisitArrayInitializerExpression(ArrayInitializerExpression arrayInitializerExpression)
             {
-                throw new NotImplementedException();
+                var elements =
+                    arrayInitializerExpression.Elements.Select(
+                        elem => CastUtilities.CastRedILNode<ExpressionNode>(elem.AcceptVisitor(this)));
+                
+                return new ArrayTableDefinitionNode(elements.ToList());
             }
 
             public RedILNode VisitTypeParameterDeclaration(TypeParameterDeclaration typeParameterDeclaration)
@@ -1045,16 +1060,64 @@ namespace RediSharp.RedIL
 
             #endregion
         }
+        
+        #region Public Utilities
+        
+        public DataValueType ResolveExpressionType(Expression expr)
+            => ExtractTypeFromAnnontations(expr.Annotations);
+
+        public DataValueType ExtractTypeFromAnnontations(IEnumerable<object> annontations)
+        {
+            var resType = DataValueType.Unknown;
+            var ilResolveResult =
+                annontations.FirstOrDefault(annot => annot is ResolveResult) as ResolveResult;
+
+            if (ilResolveResult != null)
+            {
+                if (ilResolveResult.Type.Kind == TypeKind.Array)
+                {
+                    resType = DataValueType.Array;
+                }
+                else
+                {
+                    var systemType = Type.GetType(ilResolveResult.Type.ReflectionName);
+                    resType = systemType is null ? DataValueType.Unknown : TypeUtilities.GetValueType(systemType);
+
+                    if (resType == DataValueType.Unknown)
+                    {
+                        resType = MainResolver.ResolveDataType(ilResolveResult.Type);
+                    }
+                }
+            }
+
+            return resType;
+        }
+
+        public IParameterizedMember GetInvocationResolveResult(Expression expr)
+        {
+            var invocResult = expr.Annotations
+                .FirstOrDefault(annot => annot is CSharpInvocationResolveResult) as CSharpInvocationResolveResult;
+
+            if (invocResult is null)
+            {
+                throw new RedILException($"Unable to get invocation resolve from '{expr}'");
+            }
+
+            return invocResult.Member;
+        }
+        
+        #endregion
 
         public CSharpCompiler()
         {
-            _mainResolver = new MainResolver();
+            MainResolver = new MainResolver();
         }
 
-        public RedILNode Compile(DecompilationResult csharp)
+        public RootNode Compile(DecompilationResult csharp)
         {
-            var node = csharp.Body.AcceptVisitor(new AstVisitor(this, csharp));
-            return new RootNode(node);
+            var visitor = new AstVisitor(this, csharp);
+            var node = csharp.Body.AcceptVisitor(visitor);
+            return node as RootNode;
         }
     }
 }

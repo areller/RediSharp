@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
+using RediSharp.RedIL.Enums;
+using RediSharp.RedIL.Resolving.Attributes;
 
 namespace RediSharp.RedIL.Resolving.Types
 {
     class DateTimeResolverPack
     {
+        [RedILDataType(DataValueType.Float)]
         class DateTimeProxy
         {
             

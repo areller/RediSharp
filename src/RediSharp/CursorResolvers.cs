@@ -11,11 +11,14 @@ namespace RediSharp
 {
     class CursorRedisMethodResolver : RedILMethodResolver
     {
-        private RedisCommand _cmd;
+        private string _cmd;
+
+        private DataValueType _returnType;
         
-        public CursorRedisMethodResolver(object arg)
+        public CursorRedisMethodResolver(object arg1, object arg2)
         {
-            _cmd = (RedisCommand) arg;
+            _cmd = (string) arg1;
+            _returnType = (DataValueType) arg2;
         }
         
         public override RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
@@ -23,7 +26,7 @@ namespace RediSharp
             // Redis methods expect arguments that are strings, integers, etc... so we have to unpack arrays
             // If we can unpack array in place (if it's an array table definition node), we do it,
             // otherwise, we call the unpack method in Lua
-            return new CallRedisMethodNode(_cmd, caller,
+            return new CallRedisMethodNode(_cmd, _returnType, caller,
                 arguments.SelectMany(arg =>
                         arg.DataType == DataValueType.Array
                             ? (arg.Type == RedILNodeType.ArrayTableDefinition

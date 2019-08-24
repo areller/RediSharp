@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Generic;
+using RediSharp.RedIL.Enums;
+using RediSharp.RedIL.Resolving.Attributes;
 using StackExchange.Redis;
 
 namespace RediSharp.RedIL.Resolving.Types
 {
     class RedisValueResolverPack
     {
+        [RedILDataType(DataValueType.String)]
         class RedisValueProxy
         {
             

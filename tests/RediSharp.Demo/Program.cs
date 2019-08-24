@@ -9,6 +9,25 @@ namespace RediSharp.Demo
     {
         static bool RedisFunction(ICursor cursor, RedisValue[] args, RedisKey[] keys)
         {
+            var dict = new Dictionary<string, int>()
+            {
+                { "Arik", 23 },
+                { "John", 22 }
+            };
+            
+            dict.Add("Benny", 53);
+            var list = new List<string>();
+
+            foreach (var elem in dict)
+            {
+                list.Add(elem.Key + "_" + elem.Value);
+            }
+
+            return true;
+        }
+        
+        static bool RedisFunction2(ICursor cursor, RedisValue[] args, RedisKey[] keys)
+        {
             /*
             var arr = new int[] {1, 2, 3};
             string text = string.Concat("A", "B");
@@ -20,6 +39,11 @@ namespace RediSharp.Demo
             cursor.Set("key2", lst.Count);
             return cursor.Set("key", arr.GetLength(0));*/
 
+            var dd = new Dictionary<string, int>()
+            {
+                {"Arik", 23},
+                {"John", 21}
+            };
             var kv = new KeyValuePair<int, int>(1, 2);
             var ts = new TimeSpan(1, 1, 1);
             

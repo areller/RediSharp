@@ -2,14 +2,46 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
+using RediSharp.RedIL.Nodes;
 using StackExchange.Redis;
 
 namespace RediSharp.RedIL.Resolving.Types
 {
     class DatabaseResolverPack
     {
+        class CallRedisMethodResolver : RedILMethodResolver
+        {
+            private string _method;
+
+            public CallRedisMethodResolver(object arg)
+            {
+                _method = (string) arg;
+            }
+
+            public override RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
+            {
+                return null;
+            }
+        }
+        
         class DatabaseProxy : IDatabase
         {
+            #region Strings
+            
+            public RedisValue StringGet(RedisKey key, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            public RedisValue[] StringGet(RedisKey[] keys, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+            
+            #endregion
+            
+            #region Unused
+            
             public Task<TimeSpan> PingAsync(CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
@@ -1720,15 +1752,7 @@ namespace RediSharp.RedIL.Resolving.Types
                 throw new NotImplementedException();
             }
 
-            public RedisValue StringGet(RedisKey key, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public RedisValue[] StringGet(RedisKey[] keys, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
+            
 
             public Lease<byte> StringGetLease(RedisKey key, CommandFlags flags = CommandFlags.None)
             {
@@ -1791,6 +1815,8 @@ namespace RediSharp.RedIL.Resolving.Types
             }
 
             public int Database { get; }
+            
+            #endregion
         }
         
         public static Dictionary<Type, Type> GetMapToProxy()

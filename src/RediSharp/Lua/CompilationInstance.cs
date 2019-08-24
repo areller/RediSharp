@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using RediSharp.Enums;
 using RediSharp.RedIL;
 using RediSharp.RedIL.Enums;
@@ -11,20 +12,45 @@ namespace RediSharp.Lua
 {
     class CompilationInstance
     {
+        #region Function Store
+        
+        private static readonly Dictionary<string, string> _functions = new Dictionary<string, string>()
+        {
+            { "count_tbl", "local {{func_name}} = function (tbl) local count = 0; for _ in pairs(tbl) do count = count + 1; end return count; end" }
+        };
+        
+        #endregion
+        
         class CompilationState
         {
             private int _identation;
 
             private int _currentLine;
 
+            private int _lastTempId;
+
             public StringBuilder Builder { get; }
 
-            public CompilationState()
+            public CompilationState(RootNode root)
             {
                 _currentLine = 0;
                 _identation = 0;
                 Builder = new StringBuilder();
+
+                _lastTempId = 0;
+                foreach (var ident in root.Identifiers)
+                {
+                    if (ident[0] == '_')
+                    {
+                        if (int.TryParse(ident.Substring(1), out var id))
+                        {
+                            _lastTempId = Math.Max(_lastTempId, id);
+                        }
+                    }
+                }
             }
+
+            public int GetNewId() => Interlocked.Increment(ref _lastTempId);
 
             public void Ident()
             {
@@ -119,26 +145,7 @@ namespace RediSharp.Lua
             {
                 node.Caller.AcceptVisitor(this, state);
                 state.Write(".pcall('");
-                switch (node.Method)
-                {
-                    case RedisCommand.Get:
-                        state.Write("get");
-                        break;
-                    case RedisCommand.Set:
-                        state.Write("set");
-                        break;
-                    case RedisCommand.HGet:
-                        state.Write("hget");
-                        break;
-                    case RedisCommand.HMGet:
-                        state.Write("hmget");
-                        break;
-                    case RedisCommand.HSet:
-                        state.Write("hset");
-                        break;
-                    default: throw new LuaCompilationException($"Unsupported redis method '{node.Method}'");
-                }
-                
+                state.Write(node.Method);
                 state.Write("'");
                 WriteArguments(state, node.Arguments, false);
                 state.Write(")");
@@ -365,6 +372,12 @@ namespace RediSharp.Lua
                     case LuaBuiltinMethod.TableUnpack:
                         state.Write("unpack");
                         break;
+                    case LuaBuiltinMethod.TableInsert:
+                        state.Write("table.insert");
+                        break;
+                    case LuaBuiltinMethod.TableGetN:
+                        state.Write("table.getn");
+                        break;
                     default:
                         throw new LuaCompilationException($"Unsupported lua method '{node.Method}'");
                 }
@@ -374,6 +387,11 @@ namespace RediSharp.Lua
                 state.Write(")");
 
                 return true;
+            }
+
+            public bool VisitCallLuaFunctionNode(CallLuaFunctionNode node, CompilationState state)
+            {
+                throw new NotImplementedException();
             }
 
             public bool VisitCursorNode(CursorNode node, CompilationState state)
@@ -390,20 +408,55 @@ namespace RediSharp.Lua
                 return true;
             }
 
+            public bool VisitDictionaryTableDefinition(DictionaryTableDefinitionNode node, CompilationState state)
+            {
+                state.Write("{");
+                WriteArguments(state, node.Elements);
+                state.Write("}");
+                return true;
+            }
+
             public bool VisitIteratorLoopNode(IteratorLoopNode node, CompilationState state)
             {
-                //TODO: Handle foreach over dictionaries, right now only arrays are handled
-                state.Write("for _,");
-                state.Write(node.CursorName);
-                state.Write(" in ipairs(");
-                node.Over.AcceptVisitor(this, state);
-                state.Write(") do");
-                state.NewLine();
-                state.Ident();
-                node.Body.AcceptVisitor(this, state);
-                state.NewLine();
-                state.FinishIdent();
-                state.Write("end");
+                if (node.Over.DataType == DataValueType.Array)
+                {
+                    state.Write("for _,");
+                    state.Write(node.CursorName);
+                    state.Write(" in ipairs(");
+                    node.Over.AcceptVisitor(this, state);
+                    state.Write(") do");
+                    state.NewLine();
+                    state.Ident();
+                    node.Body.AcceptVisitor(this, state);
+                    state.NewLine();
+                    state.FinishIdent();
+                    state.Write("end");
+                }
+                else if (node.Over.DataType == DataValueType.Dictionary)
+                {
+                    var keyTempIdent = CreateTemporaryIdentifier(state);
+                    var valueTempIdent = CreateTemporaryIdentifier(state);
+                    state.Write($"for {keyTempIdent},{valueTempIdent} in pairs(");
+                    node.Over.AcceptVisitor(this, state);
+                    state.Write(") do");
+                    state.NewLine();
+                    state.Ident();
+                    state.Write($"local {node.CursorName} = ");
+                    state.Write("{key=");
+                    state.Write(keyTempIdent);
+                    state.Write(",value=");
+                    state.Write(valueTempIdent);
+                    state.Write("};");
+                    state.NewLine();
+                    node.Body.AcceptVisitor(this, state);
+                    state.NewLine();
+                    state.FinishIdent();
+                    state.Write("end");
+                }
+                else
+                {
+                    throw new LuaCompilationException($"Cannot iterate over '{node.Over.DataType}'");
+                }
 
                 return true;
             }
@@ -421,16 +474,37 @@ namespace RediSharp.Lua
                 }
             }
 
+            private void WriteArguments(CompilationState state,
+                IEnumerable<KeyValuePair<ExpressionNode, ExpressionNode>> arguments, bool firstArgument = true)
+            {
+                WriteArguments<KeyValuePair<ExpressionNode, ExpressionNode>>(state, arguments, arg =>
+                {
+                    state.Write("[");
+                    arg.Key.AcceptVisitor(this, state);
+                    state.Write("]");
+                    state.Write("=");
+                    arg.Value.AcceptVisitor(this, state);
+                }, firstArgument);
+            }
+
             private void WriteArguments(CompilationState state, IList<ExpressionNode> arguments, bool firstArgument = true)
             {
-                for (var i = 0; i < arguments.Count; i++)
+                WriteArguments<ExpressionNode>(state, arguments, arg => { arg.AcceptVisitor(this, state); },
+                    firstArgument);
+            }
+
+            private void WriteArguments<T>(CompilationState state, IEnumerable<T> arguments, Action<T> action,
+                bool firstArgument = true)
+            {
+                bool first = true;
+                foreach (var arg in arguments)
                 {
-                    if (i > 0 || !firstArgument)
+                    if (!first || !firstArgument)
                     {
                         state.Write(", ");
                     }
-
-                    arguments[i].AcceptVisitor(this, state);
+                    action(arg);
+                    first = false;
                 }
             }
 
@@ -515,6 +589,11 @@ namespace RediSharp.Lua
                 state.Write(str);
                 state.Write('"');
             }
+
+            private string CreateTemporaryIdentifier(CompilationState state)
+            {
+                return $"_{state.GetNewId()}";
+            }
         }
 
         private RedILNode _root;
@@ -523,10 +602,10 @@ namespace RediSharp.Lua
 
         private IRedILVisitor<bool, CompilationState> _visitor;
 
-        public CompilationInstance(RedILNode root)
+        public CompilationInstance(RootNode root)
         {
             _root = root;
-            _state = new CompilationState();
+            _state = new CompilationState(root);
             _visitor = new Visitor();
         }
 

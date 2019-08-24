@@ -18,13 +18,11 @@ namespace RediSharp.RedIL.Nodes
         }
 
         public IteratorLoopNode(
-            DataValueType cursorType,
             string cursorName,
             ExpressionNode over,
             BlockNode body)
             : base(RedILNodeType.IteratorLoop)
         {
-            CursorType = cursorType;
             CursorName = cursorName;
             Over = over;
             Body = body;

@@ -53,9 +53,13 @@ namespace RediSharp.RedIL
 
         TReturn VisitCallBuiltinLuaMethodNode(CallBuiltinLuaMethodNode node, TState state);
 
+        TReturn VisitCallLuaFunctionNode(CallLuaFunctionNode node, TState state);
+        
         TReturn VisitCursorNode(CursorNode node, TState state);
 
         TReturn VisitArrayTableDefinitionNode(ArrayTableDefinitionNode node, TState state);
+
+        TReturn VisitDictionaryTableDefinition(DictionaryTableDefinitionNode node, TState state);
 
         TReturn VisitIteratorLoopNode(IteratorLoopNode node, TState state);
     }

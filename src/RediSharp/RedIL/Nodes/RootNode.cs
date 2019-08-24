@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using RediSharp.RedIL.Enums;
 
 namespace RediSharp.RedIL.Nodes
@@ -5,6 +6,8 @@ namespace RediSharp.RedIL.Nodes
     class RootNode : RedILNode
     {
         public RedILNode Body { get; set; }
+
+        public HashSet<string> Identifiers { get; set; }
 
         public RootNode(RedILNode body = null)
             : base(RedILNodeType.Root)

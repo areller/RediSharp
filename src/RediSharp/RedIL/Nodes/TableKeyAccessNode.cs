@@ -12,8 +12,9 @@ namespace RediSharp.RedIL.Nodes
 
         public TableKeyAccessNode(
             ExpressionNode table,
-            ExpressionNode key
-        ) : base(RedILNodeType.TableKeyAccess)
+            ExpressionNode key,
+            DataValueType type)
+            : base(RedILNodeType.TableKeyAccess, type)
         {
             Table = table;
             Key = key;

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using ICSharpCode.Decompiler;
 using ICSharpCode.Decompiler.CSharp;
 using ICSharpCode.Decompiler.CSharp.Syntax;
@@ -21,8 +22,6 @@ namespace RediSharp.CSharp
 
         private AssemblyResolver _assemblyResolver;
 
-        private CSharpDecompiler _decompiler;
-
         public ActionDecompiler(Assembly callingAssembly)
         {
             _callingAssembly = callingAssembly;
@@ -30,20 +29,22 @@ namespace RediSharp.CSharp
             _assemblyResolver = new AssemblyResolver(_rootAssembly, _callingAssembly);
 
             var file = _callingAssembly.Location;
-            var decompiler = new CSharpDecompiler(file, _assemblyResolver, new DecompilerSettings()
-            {
-                ExtensionMethods = false
-            });
-
-            _decompiler = decompiler;
         }
 
         public DecompilationResult Decompile<TCursor, TRes>(Func<TCursor, RedisValue[], RedisKey[], TRes> action)
         {
+            var asm = action.Method.DeclaringType.Assembly;
+            _assemblyResolver.LoadAssembly(action.Method.DeclaringType.Assembly);
+            
+            var decompiler = new CSharpDecompiler(asm.Location, _assemblyResolver, new DecompilerSettings()
+            {
+                ExtensionMethods = false
+            });
+            
             var token = action.Method.MetadataToken;
             var method = MetadataTokenHelpers.TryAsEntityHandle(token);
 
-            var ast = _decompiler.Decompile(new List<EntityHandle>()
+            var ast = decompiler.Decompile(new List<EntityHandle>()
             {
                 method.Value
             });
