@@ -3,7 +3,7 @@ using RediSharp.RedIL.Enums;
 
 namespace RediSharp.RedIL.Resolving.Attributes
  {
-     [AttributeUsage(AttributeTargets.Class)]
+     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Enum)]
      class RedILDataType : Attribute
      {
          public DataValueType Type { get; }

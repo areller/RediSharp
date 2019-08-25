@@ -1,8 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using RediSharp.Enums;
+using RediSharp.RedIL.Enums;
 using RediSharp.RedIL.Nodes;
+using RediSharp.RedIL.Resolving.Attributes;
 using StackExchange.Redis;
 
 namespace RediSharp.RedIL.Resolving.Types
@@ -13,15 +17,27 @@ namespace RediSharp.RedIL.Resolving.Types
         {
             private string _method;
 
-            public CallRedisMethodResolver(object arg)
+            private DataValueType _returnType;
+
+            public CallRedisMethodResolver(object arg1, object arg2)
             {
-                _method = (string) arg;
+                _method = (string) arg1;
+                _returnType = (DataValueType) arg2;
             }
 
             public override RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
             {
-                return null;
+                return new CallRedisMethodNode(_method, _returnType, caller,
+                    arguments.SelectMany(arg =>
+                            arg.DataType == DataValueType.Array
+                                ? (arg.Type == RedILNodeType.ArrayTableDefinition
+                                    ? (arg as ArrayTableDefinitionNode).Elements
+                                    : WrapSingle(new CallBuiltinLuaMethodNode(LuaBuiltinMethod.TableUnpack, new ExpressionNode[] {arg})))
+                                : WrapSingle(arg))
+                        .ToArray());
             }
+            
+            private ExpressionNode[] WrapSingle(ExpressionNode node) => new ExpressionNode[] {node};
         }
         
         class DatabaseProxy : IDatabase
@@ -29,12 +45,14 @@ namespace RediSharp.RedIL.Resolving.Types
             #region Strings
             
             //GET key
+            [RedILResolve(typeof(CallRedisMethodResolver), "GET {0}", DataValueType.String)]
             public RedisValue StringGet(RedisKey key, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
 
             //MGET key1 key2 ...
+            [RedILResolve(typeof(CallRedisMethodResolver), "MGET {0}", DataValueType.Array)]
             public RedisValue[] StringGet(RedisKey[] keys, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();

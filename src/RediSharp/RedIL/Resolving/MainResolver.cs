@@ -158,7 +158,29 @@ namespace RediSharp.RedIL.Resolving
                     Resolver = resolver
                 });
             }
-            
+
+            if (proxy.IsEnum)
+            {
+                foreach (var enumName in proxy.GetEnumNames())
+                {
+                    var field = proxy.GetField(enumName);
+                    var resolveAttr = field?.GetCustomAttributes()
+                        ?.FirstOrDefault(attr => attr is RedILResolve) as RedILResolve;
+
+                    if (resolveAttr is null)
+                    {
+                        continue;
+                    }
+
+                    var resolver = resolveAttr.CreateMemberResolver();
+                    staticMembers.Add(new Member()
+                    {
+                        Name = enumName,
+                        Resolver = resolver
+                    });
+                }
+            }
+
             _typeDefs.Add(type.FullName, new TypeDefinition()
             {
                 DataType = dataType,
@@ -309,6 +331,7 @@ namespace RediSharp.RedIL.Resolving
             AddPack(StringResolverPack.GetMapToProxy());
             AddPack(TimeSpanResolverPack.GetMapToProxy());
             AddPack(DateTimeResolverPack.GetMapToProxy());
+            AddPack(WhenEnumResolverPack.GetMapToProxy());
             
             #endregion
         }

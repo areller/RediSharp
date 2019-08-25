@@ -145,6 +145,11 @@ namespace RediSharp.Lua
             {
                 res = (RedisValue[]) nativeRedisResult;
             }
+            //TODO: Handle rest of List<T>, IList<T>, Dictionary<K,V>, IDictionary<K,V> conversions
+            else if (typeof(TRes) == typeof(List<RedisValue>))
+            {
+                res = ((RedisValue[]) nativeRedisResult).ToList();
+            }
             else if (typeof(TRes) == typeof(RedisKey[]))
             {
                 res = (RedisKey[]) nativeRedisResult;
