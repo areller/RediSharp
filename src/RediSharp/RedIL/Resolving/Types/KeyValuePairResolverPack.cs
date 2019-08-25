@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using RediSharp.RedIL.Enums;
 using RediSharp.RedIL.Nodes;
 using RediSharp.RedIL.Resolving.Attributes;
+using RediSharp.RedIL.Resolving.CommonResolvers;
 
 namespace RediSharp.RedIL.Resolving.Types
 {
@@ -20,21 +21,6 @@ namespace RediSharp.RedIL.Resolving.Types
                 });
             }
         }
-
-        class KVAccessResolver : RedILMemberResolver
-        {
-            private string _key;
-
-            public KVAccessResolver(object arg)
-            {
-                _key = (string) arg;
-            }
-            
-            public override ExpressionNode Resolve(Context context, ExpressionNode caller)
-            {
-                return new TableKeyAccessNode(caller, (ConstantValueNode) _key, context.Compiler.ResolveExpressionType(context.CurrentExpression));
-            }
-        }
         
         [RedILDataType(DataValueType.KVPair)]
         public class KeyValuePairProxy<K, V>
@@ -45,10 +31,10 @@ namespace RediSharp.RedIL.Resolving.Types
                 
             }
 
-            [RedILResolve(typeof(KVAccessResolver), "key")]
+            [RedILResolve(typeof(TableAccessMemberResolver), "key")]
             public K Key { get; }
 
-            [RedILResolve(typeof(KVAccessResolver), "value")]
+            [RedILResolve(typeof(TableAccessMemberResolver), "value")]
             public V Value { get; }
         }
         

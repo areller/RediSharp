@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using RediSharp.RedIL.Enums;
 using RediSharp.RedIL.Nodes;
 using RediSharp.RedIL.Resolving.Attributes;
 
@@ -7,11 +9,19 @@ namespace RediSharp.RedIL.Resolving.Types
 {
     class NullableResolverPack
     {
+        class ConstructorResolver : RedILObjectResolver
+        {
+            public override ExpressionNode Resolve(Context context, ExpressionNode[] arguments, ExpressionNode[] elements)
+            {
+                return arguments.First();
+            }
+        }
+        
         class HasValueResolver : RedILMemberResolver
         {
             public override ExpressionNode Resolve(Context context, ExpressionNode caller)
             {
-                throw new NotImplementedException();
+                return BinaryExpressionNode.Create(BinaryExpressionOperator.NotEqual, caller, new NilNode());
             }
         }
         
@@ -19,13 +29,18 @@ namespace RediSharp.RedIL.Resolving.Types
         {
             public override ExpressionNode Resolve(Context context, ExpressionNode caller)
             {
-                throw new NotImplementedException();
+                return caller;
             }
         }
         
         class NullableProxy<T>
             where T : struct
         {
+            [RedILResolve(typeof(ConstructorResolver))]
+            public NullableProxy(T value)
+            {
+            }
+
             [RedILResolve(typeof(ValueResolver))] 
             public T Value { get; set; }
 

@@ -36,6 +36,63 @@ namespace RediSharp.RedIL.Resolving.Types
             }
         }
         
+        class ClearResolver : RedILMethodResolver
+        {
+            public override RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
+            {
+                return new CallLuaFunctionNode(LuaFunction.TableClear, DataValueType.Unknown, new List<ExpressionNode>() {caller});
+            }
+        }
+
+        class ContainsResolver : RedILMethodResolver
+        {
+            public override RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
+            {
+                return new CallLuaFunctionNode(LuaFunction.TableArrayContains, DataValueType.Boolean,
+                    new List<ExpressionNode>() {caller, arguments[0]});
+            }
+        }
+        
+        class RemoveResolver : RedILMethodResolver
+        {
+            public override RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
+            {
+                return new CallLuaFunctionNode(LuaFunction.TableArrayRemove, DataValueType.Boolean,
+                    new List<ExpressionNode>() {caller, arguments[0]});
+            }
+        }
+
+        class IndexOfResolver : RedILMethodResolver
+        {
+            public override RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
+            {
+                return new CallLuaFunctionNode(LuaFunction.TableArrayIndexOf, DataValueType.Integer,
+                    new List<ExpressionNode>() {caller, arguments[0]});
+            }
+        }
+
+        class InsertResolver : RedILMethodResolver
+        {
+            public override RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
+            {
+                return new CallBuiltinLuaMethodNode(LuaBuiltinMethod.TableInsert, new List<ExpressionNode>()
+                {
+                    caller, (ConstantValueNode)1 + arguments[0], arguments[1]
+                });
+            }
+        }
+
+        class RemoveAtResolver : RedILMethodResolver
+        {
+            public override RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
+            {
+                return new CallBuiltinLuaMethodNode(LuaBuiltinMethod.TableRemove, new List<ExpressionNode>()
+                {
+                    caller, (ConstantValueNode) 1 + arguments[0]
+                });
+            }
+        }
+
         [RedILDataType(DataValueType.Array)]
         class ListProxy<T> : IList<T>
         {
@@ -53,43 +110,36 @@ namespace RediSharp.RedIL.Resolving.Types
             {
             }
 
+            [RedILResolve(typeof(ClearResolver))]
             public void Clear()
             {
-                throw new System.NotImplementedException();
             }
 
-            public bool Contains(T item)
-            {
-                throw new System.NotImplementedException();
-            }
+            [RedILResolve(typeof(ContainsResolver))]
+            public bool Contains(T item) => default;
 
             public void CopyTo(T[] array, int arrayIndex)
             {
-                throw new System.NotImplementedException();
             }
 
-            public bool Remove(T item)
-            {
-                throw new System.NotImplementedException();
-            }
+            [RedILResolve(typeof(RemoveResolver))]
+            public bool Remove(T item) => default;
 
             [RedILResolve(typeof(CountResolver))]
             public int Count { get; }
             public bool IsReadOnly { get; }
 
-            public int IndexOf(T item)
-            {
-                throw new System.NotImplementedException();
-            }
-
+            [RedILResolve(typeof(IndexOfResolver))]
+            public int IndexOf(T item) => default;
+            
+            [RedILResolve(typeof(InsertResolver))]
             public void Insert(int index, T item)
             {
-                throw new System.NotImplementedException();
             }
 
+            [RedILResolve(typeof(RemoveAtResolver))]
             public void RemoveAt(int index)
             {
-                throw new System.NotImplementedException();
             }
 
             public T this[int index]

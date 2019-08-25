@@ -13,30 +13,18 @@ namespace RediSharp.Lua
     class CompilationInstance
     {
         #region Function Store
-
-        private static readonly Dictionary<string, string> _functions = new Dictionary<string, string>()
+        
+        private static readonly Dictionary<LuaFunction, string> _functions = new Dictionary<LuaFunction, string>()
         {
-            {"tbl_has_key", "local {{func_name}} = function(tbl, key) return tbl[key] ~= nil end"},
-            {
-                "tbl_count",
-                "local {{func_name}} = function(tbl) local count = 0; for _ in pairs(tbl) do count = count + 1; end return count; end"
-            },
-            {
-                "tbl_keys",
-                "local {{func_name} = function(tbl) local keys = {}; for k, _ in pairs(tbl) do table.insert(keys, k); end return keys; end"
-            },
-            {
-                "tbl_values",
-                "local {{func_name}} = function(tbl) local values = {}; for _, v in pairs(tbl) do table.insert(values, v); end return values; end"
-            },
-            {
-                "tbl_remove",
-                "local {{func_name}} = function(tbl, key) if tbl[key] == nil then return false; end tbl[key] = nil; return true; end"
-            },
-            {
-                "tbl_clear",
-                "local {{func_name}} = function(tbl) for k, _ in pairs(tbl) do tbl[k] = nil; end end"
-            }
+            { LuaFunction.TableArrayContains, "local {{func_name}} = function(tbl, elem) for _, v in ipairs(tbl) do if v == elem then return true; end end return false; end" },
+            { LuaFunction.TableArrayRemove, "local {{func_name}} = function(tbl, elem) for i, v in ipairs(tbl) do if v == elem then table.remove(tbl, i); return true; end end return false; end" },
+            { LuaFunction.TableArrayIndexOf, "local {{func_name} = function(tbl, elem) for i, v in ipairs(tbl) do if v == elem then return i - 1; end end return -1; end" },
+            { LuaFunction.TableDictHasKey, "local {{func_name}} = function(tbl, key) return tbl[key] ~= nil end" },
+            { LuaFunction.TableDictKeys, "local {{func_name} = function(tbl) local keys = {}; for k, _ in pairs(tbl) do table.insert(keys, k); end return keys; end" },
+            { LuaFunction.TableDictValues, "local {{func_name}} = function(tbl) local values = {}; for _, v in pairs(tbl) do table.insert(values, v); end return values; end" },
+            { LuaFunction.TableDictRemove, "local {{func_name}} = function(tbl, key) if tbl[key] == nil then return false; end tbl[key] = nil; return true; end" },
+            { LuaFunction.TableCount, "local {{func_name}} = function(tbl) local count = 0; for _ in pairs(tbl) do count = count + 1; end return count; end" },
+            { LuaFunction.TableClear, "local {{func_name}} = function(tbl) for k, _ in pairs(tbl) do tbl[k] = nil; end end" }
         };
         
         #endregion
@@ -49,7 +37,7 @@ namespace RediSharp.Lua
 
             private int _lastTempId;
 
-            private Dictionary<string, string> _functionPointers;
+            private Dictionary<LuaFunction, string> _functionPointers;
 
             public StringBuilder Builder { get; }
 
@@ -74,10 +62,10 @@ namespace RediSharp.Lua
                 }
 
                 FunctionDefinitions = new List<string>();
-                _functionPointers = new Dictionary<string, string>();
+                _functionPointers = new Dictionary<LuaFunction, string>();
             }
 
-            public string GetFunctionId(string functionName)
+            public string GetFunctionId(LuaFunction functionName)
             {
                 if (!_functionPointers.TryGetValue(functionName, out var pointer))
                 {
@@ -414,8 +402,20 @@ namespace RediSharp.Lua
                     case LuaBuiltinMethod.StringSub:
                         state.Write("string.sub");
                         break;
+                    case LuaBuiltinMethod.StringGSub:
+                        state.Write("string.gsub");
+                        break;
                     case LuaBuiltinMethod.StringToLower:
                         state.Write("string.lower");
+                        break;
+                    case LuaBuiltinMethod.StringToUpper:
+                        state.Write("string.upper");
+                        break;
+                    case LuaBuiltinMethod.StringLength:
+                        state.Write("string.length");
+                        break;
+                    case LuaBuiltinMethod.StringFind:
+                        state.Write("string.find");
                         break;
                     case LuaBuiltinMethod.TableUnpack:
                         state.Write("unpack");
@@ -423,8 +423,14 @@ namespace RediSharp.Lua
                     case LuaBuiltinMethod.TableInsert:
                         state.Write("table.insert");
                         break;
+                    case LuaBuiltinMethod.TableRemove:
+                        state.Write("table.remove");
+                        break;
                     case LuaBuiltinMethod.TableGetN:
                         state.Write("table.getn");
+                        break;
+                    case LuaBuiltinMethod.TableConcat:
+                        state.Write("table.concat");
                         break;
                     default:
                         throw new LuaCompilationException($"Unsupported lua method '{node.Method}'");

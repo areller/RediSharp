@@ -4,8 +4,14 @@ namespace RediSharp.Enums
     {
         StringSub,
         StringToLower,
+        StringToUpper,
+        StringLength,
+        StringFind,
+        StringGSub,
         TableUnpack,
         TableInsert,
-        TableGetN
+        TableRemove,
+        TableGetN,
+        TableConcat
     }
 }

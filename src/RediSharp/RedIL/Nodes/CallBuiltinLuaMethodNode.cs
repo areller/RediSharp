@@ -9,11 +9,17 @@ namespace RediSharp.RedIL.Nodes
         private static readonly Dictionary<LuaBuiltinMethod, DataValueType> MethodTypeTable
             = new Dictionary<LuaBuiltinMethod, DataValueType>()
             {
-                {LuaBuiltinMethod.StringToLower, DataValueType.String},
-                {LuaBuiltinMethod.TableUnpack, DataValueType.Array},
                 {LuaBuiltinMethod.StringSub, DataValueType.String},
+                {LuaBuiltinMethod.StringToLower, DataValueType.String},
+                {LuaBuiltinMethod.StringToUpper, DataValueType.String},
+                {LuaBuiltinMethod.StringLength, DataValueType.Integer},
+                {LuaBuiltinMethod.StringFind, DataValueType.Integer},
+                {LuaBuiltinMethod.StringGSub, DataValueType.String},
+                {LuaBuiltinMethod.TableUnpack, DataValueType.Array},
                 {LuaBuiltinMethod.TableInsert, DataValueType.Unknown},
-                {LuaBuiltinMethod.TableGetN, DataValueType.Integer}
+                {LuaBuiltinMethod.TableRemove, DataValueType.Integer},
+                {LuaBuiltinMethod.TableGetN, DataValueType.Integer},
+                {LuaBuiltinMethod.TableConcat, DataValueType.String}
             };
         
         public LuaBuiltinMethod Method { get; set; }

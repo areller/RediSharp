@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using RediSharp.Enums;
 using RediSharp.RedIL.Enums;
 using RediSharp.RedIL.Nodes;
 using RediSharp.RedIL.Resolving.Attributes;
@@ -24,7 +25,7 @@ namespace RediSharp.RedIL.Resolving.Types
         {
             public override ExpressionNode Resolve(Context context, ExpressionNode caller)
             {
-                return new CallLuaFunctionNode("tbl_count", DataValueType.Integer, new List<ExpressionNode>() {caller});
+                return new CallLuaFunctionNode(LuaFunction.TableCount, DataValueType.Integer, new List<ExpressionNode>() {caller});
             }
         }
 
@@ -48,7 +49,7 @@ namespace RediSharp.RedIL.Resolving.Types
         {
             public override RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
             {
-                return new CallLuaFunctionNode("tbl_clear", DataValueType.Unknown, new List<ExpressionNode>() {caller});
+                return new CallLuaFunctionNode(LuaFunction.TableClear, DataValueType.Unknown, new List<ExpressionNode>() {caller});
             }
         }
 
@@ -71,7 +72,7 @@ namespace RediSharp.RedIL.Resolving.Types
                 }
                 else
                 {
-                    return new CallLuaFunctionNode("tbl_remove", DataValueType.Boolean,
+                    return new CallLuaFunctionNode(LuaFunction.TableDictRemove, DataValueType.Boolean,
                         new List<ExpressionNode>() {caller, arguments[0]});
                 }
             }
@@ -79,16 +80,16 @@ namespace RediSharp.RedIL.Resolving.Types
 
         class KeysValuesResolver : RedILMemberResolver
         {
-            private string _prop;
+            private LuaFunction _func;
 
             public KeysValuesResolver(object arg)
             {
-                _prop = (string) arg;
+                _func = (LuaFunction) arg;
             }
 
             public override ExpressionNode Resolve(Context context, ExpressionNode caller)
             {
-                return new CallLuaFunctionNode($"tbl_{_prop}", DataValueType.Array,
+                return new CallLuaFunctionNode(_func, DataValueType.Array,
                     new List<ExpressionNode>() {caller});
             }
         }
@@ -149,10 +150,10 @@ namespace RediSharp.RedIL.Resolving.Types
                 set => throw new NotImplementedException();
             }
 
-            [RedILResolve(typeof(KeysValuesResolver), "keys")]
+            [RedILResolve(typeof(KeysValuesResolver), LuaFunction.TableDictKeys)]
             public ICollection<K> Keys { get; }
             
-            [RedILResolve(typeof(KeysValuesResolver), "values")]
+            [RedILResolve(typeof(KeysValuesResolver), LuaFunction.TableDictValues)]
             public ICollection<V> Values { get; }
         }
         

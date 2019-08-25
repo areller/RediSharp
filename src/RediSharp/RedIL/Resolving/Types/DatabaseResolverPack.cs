@@ -28,12 +28,262 @@ namespace RediSharp.RedIL.Resolving.Types
         {
             #region Strings
             
+            //GET key
             public RedisValue StringGet(RedisKey key, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
 
+            //MGET key1 key2 ...
             public RedisValue[] StringGet(RedisKey[] keys, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+            
+            //SET key value [exp]
+            public bool StringSet(RedisKey key, RedisValue value, TimeSpan? expiry = null, When when = When.Always, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            //MSET key1 val1 key2 val2
+            public bool StringSet(KeyValuePair<RedisKey, RedisValue>[] values, When when = When.Always, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+            
+            //INCRBY key val
+            public long StringIncrement(RedisKey key, long value = 1, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            //INCRBYFLOAT key val
+            public double StringIncrement(RedisKey key, double value, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            //STRLEN key
+            public long StringLength(RedisKey key, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+            
+            //GETSET key value
+            public RedisValue StringGetSet(RedisKey key, RedisValue value, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            //SETRANGE key offset value
+            public RedisValue StringSetRange(RedisKey key, long offset, RedisValue value, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            //GETRANGE key start end
+            public RedisValue StringGetRange(RedisKey key, long start, long end, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+            
+            //INCRBY key -value
+            public long StringDecrement(RedisKey key, long value = 1, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            //INCRBYFLOAT key -value
+            public double StringDecrement(RedisKey key, double value, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+            
+            #endregion
+            
+            #region Lists
+            
+            //LTRIM key start stop
+            public void ListTrim(RedisKey key, long start, long stop, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+            
+            //LSET key index value
+            public void ListSetByIndex(RedisKey key, long index, RedisValue value, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+            
+            //RPUSH key value
+            public long ListRightPush(RedisKey key, RedisValue value, When when = When.Always, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            //RPUSH key value1 value2 ...
+            public long ListRightPush(RedisKey key, RedisValue[] values, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+            
+            //RPOPLPUSH source dest
+            public RedisValue ListRightPopLeftPush(RedisKey source, RedisKey destination, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+            
+            //RPOP key
+            public RedisValue ListRightPop(RedisKey key, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+            
+            //LREM key count value
+            public long ListRemove(RedisKey key, RedisValue value, long count = 0, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+            
+            //LRANGE key start stop
+            public RedisValue[] ListRange(RedisKey key, long start = 0, long stop = -1, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+            
+            //LLEN key
+            public long ListLength(RedisKey key, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+            
+            //LPOP key
+            public RedisValue ListLeftPop(RedisKey key, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            //LPUSH key value
+            public long ListLeftPush(RedisKey key, RedisValue value, When when = When.Always, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            //LPUSH key value1 value2 ...
+            public long ListLeftPush(RedisKey key, RedisValue[] values, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+            
+            //LINSERT key AFTER pivot value
+            public long ListInsertAfter(RedisKey key, RedisValue pivot, RedisValue value, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            //LINSERT key BEFORE pivot value
+            public long ListInsertBefore(RedisKey key, RedisValue pivot, RedisValue value, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+            
+            //LINDEX key index
+            public RedisValue ListGetByIndex(RedisKey key, long index, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+            
+            #endregion
+            
+            #region Hash
+            
+            //HVALS key
+            public RedisValue[] HashValues(RedisKey key, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+            
+            //HSET key hashField value
+            public bool HashSet(RedisKey key, RedisValue hashField, RedisValue value, When when = When.Always, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+            
+            //HSET key field1 val1 field2 val2 ...
+            public void HashSet(RedisKey key, HashEntry[] hashFields, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+            
+            //HLEN key
+            public long HashLength(RedisKey key, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+            
+            //HKEYS key
+            public RedisValue[] HashKeys(RedisKey key, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+            
+            //HINCRBY key hashField value
+            public long HashIncrement(RedisKey key, RedisValue hashField, long value = 1, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            //HINCRBYFLOAT key hashField value
+            public double HashIncrement(RedisKey key, RedisValue hashField, double value, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+            
+            //HGETALL key
+            public HashEntry[] HashGetAll(RedisKey key, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+            
+            //HMGET key hashField1 hashField2 ...
+            public RedisValue[] HashGet(RedisKey key, RedisValue[] hashFields, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+            
+            //HDEL key hashField
+            public bool HashDelete(RedisKey key, RedisValue hashField, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            //HDEL key hashField1 hashField2 ...
+            public long HashDelete(RedisKey key, RedisValue[] hashFields, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            //HEXISTS key hashField
+            public bool HashExists(RedisKey key, RedisValue hashField, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            //HGET key hashField
+            public RedisValue HashGet(RedisKey key, RedisValue hashField, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            //HINCYBY key hashField value
+            public long HashDecrement(RedisKey key, RedisValue hashField, long value = 1, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            //HINCRBYFLOAT key hashField value
+            public double HashDecrement(RedisKey key, RedisValue hashField, double value, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
@@ -1007,68 +1257,8 @@ namespace RediSharp.RedIL.Resolving.Types
             {
                 throw new NotImplementedException();
             }
-
-            public long HashDecrement(RedisKey key, RedisValue hashField, long value = 1, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public double HashDecrement(RedisKey key, RedisValue hashField, double value, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public bool HashDelete(RedisKey key, RedisValue hashField, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public long HashDelete(RedisKey key, RedisValue[] hashFields, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public bool HashExists(RedisKey key, RedisValue hashField, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public RedisValue HashGet(RedisKey key, RedisValue hashField, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
+            
             public Lease<byte> HashGetLease(RedisKey key, RedisValue hashField, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public RedisValue[] HashGet(RedisKey key, RedisValue[] hashFields, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public HashEntry[] HashGetAll(RedisKey key, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public long HashIncrement(RedisKey key, RedisValue hashField, long value = 1, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public double HashIncrement(RedisKey key, RedisValue hashField, double value, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public RedisValue[] HashKeys(RedisKey key, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public long HashLength(RedisKey key, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
@@ -1083,22 +1273,7 @@ namespace RediSharp.RedIL.Resolving.Types
             {
                 throw new NotImplementedException();
             }
-
-            public void HashSet(RedisKey key, HashEntry[] hashFields, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public bool HashSet(RedisKey key, RedisValue hashField, RedisValue value, When when = When.Always, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public RedisValue[] HashValues(RedisKey key, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
+            
             public bool HyperLogLogAdd(RedisKey key, RedisValue value, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
@@ -1208,81 +1383,7 @@ namespace RediSharp.RedIL.Resolving.Types
             {
                 throw new NotImplementedException();
             }
-
-            public RedisValue ListGetByIndex(RedisKey key, long index, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public long ListInsertAfter(RedisKey key, RedisValue pivot, RedisValue value, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public long ListInsertBefore(RedisKey key, RedisValue pivot, RedisValue value, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public RedisValue ListLeftPop(RedisKey key, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public long ListLeftPush(RedisKey key, RedisValue value, When when = When.Always, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public long ListLeftPush(RedisKey key, RedisValue[] values, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public long ListLength(RedisKey key, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public RedisValue[] ListRange(RedisKey key, long start = 0, long stop = -1, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public long ListRemove(RedisKey key, RedisValue value, long count = 0, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public RedisValue ListRightPop(RedisKey key, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public RedisValue ListRightPopLeftPush(RedisKey source, RedisKey destination, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public long ListRightPush(RedisKey key, RedisValue value, When when = When.Always, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public long ListRightPush(RedisKey key, RedisValue[] values, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public void ListSetByIndex(RedisKey key, long index, RedisValue value, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public void ListTrim(RedisKey key, long start, long stop, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
+            
 
             public bool LockExtend(RedisKey key, RedisValue value, TimeSpan expiry, CommandFlags flags = CommandFlags.None)
             {
@@ -1742,74 +1843,22 @@ namespace RediSharp.RedIL.Resolving.Types
                 throw new NotImplementedException();
             }
 
-            public long StringDecrement(RedisKey key, long value = 1, CommandFlags flags = CommandFlags.None)
+            public bool StringGetBit(RedisKey key, long offset, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
-
-            public double StringDecrement(RedisKey key, double value, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
             
+            public bool StringSetBit(RedisKey key, long offset, bool bit, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
 
             public Lease<byte> StringGetLease(RedisKey key, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
 
-            public bool StringGetBit(RedisKey key, long offset, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public RedisValue StringGetRange(RedisKey key, long start, long end, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public RedisValue StringGetSet(RedisKey key, RedisValue value, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
             public RedisValueWithExpiry StringGetWithExpiry(RedisKey key, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public long StringIncrement(RedisKey key, long value = 1, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public double StringIncrement(RedisKey key, double value, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public long StringLength(RedisKey key, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public bool StringSet(RedisKey key, RedisValue value, TimeSpan? expiry = null, When when = When.Always, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public bool StringSet(KeyValuePair<RedisKey, RedisValue>[] values, When when = When.Always, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public bool StringSetBit(RedisKey key, long offset, bool bit, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public RedisValue StringSetRange(RedisKey key, long offset, RedisValue value, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }

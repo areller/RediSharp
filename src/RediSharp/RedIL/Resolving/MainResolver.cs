@@ -244,7 +244,17 @@ namespace RediSharp.RedIL.Resolving
 
         private TypeDefinition FindTypeDefinition(IType type)
         {
-            string name = type.GetDefinition().ReflectionName;
+            string name;
+            // Special treatment for arrays
+            if (type.Kind == TypeKind.Array)
+            {
+                name = typeof(Array).FullName;
+            }
+            else
+            {
+                name = type.GetDefinition().ReflectionName;
+            }
+            
             TypeDefinition typeDef;
             if (!_typeDefs.TryGetValue(name, out typeDef))
             {

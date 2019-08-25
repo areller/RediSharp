@@ -108,6 +108,8 @@ namespace RediSharp.RedIL.Utilities
             {
                 case TypeCode.String:
                     return true;
+                case TypeCode.Char:
+                    return true;
                 default:
                     return false;
             }
@@ -118,6 +120,8 @@ namespace RediSharp.RedIL.Utilities
             switch (kTypeCode)
             {
                 case KnownTypeCode.String:
+                    return true;
+                case KnownTypeCode.Char:
                     return true;
                 default:
                     return false;

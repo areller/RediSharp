@@ -354,20 +354,21 @@ namespace RediSharp.RedIL
 
             public RedILNode VisitMemberReferenceExpression(MemberReferenceExpression memberReferenceExpression)
             {
-                var isStatic = memberReferenceExpression.Target is TypeReferenceExpression;
+                var target = memberReferenceExpression.Target;
+                var isStatic = target is TypeReferenceExpression;
                 var resolveResult =
-                    memberReferenceExpression.Annotations.FirstOrDefault(annot => annot is MemberResolveResult) as
-                        MemberResolveResult;
+                    target.Annotations.FirstOrDefault(annot => annot is ResolveResult) as
+                        ResolveResult;
 
                 if (resolveResult is null)
                 {
                     throw new RedILException("Unable to find member resolve annotation");
                 }
 
-                var resolver = _resolver.ResolveMember(isStatic, resolveResult.Member.DeclaringType,
+                var resolver = _resolver.ResolveMember(isStatic, resolveResult.Type,
                     memberReferenceExpression.MemberName);
 
-                var caller = isStatic ? null : CastUtilities.CastRedILNode<ExpressionNode>(memberReferenceExpression.Target.AcceptVisitor(this));
+                var caller = isStatic ? null : CastUtilities.CastRedILNode<ExpressionNode>(target.AcceptVisitor(this));
 
                 return resolver.Resolve(GetContext(memberReferenceExpression), caller);
             }

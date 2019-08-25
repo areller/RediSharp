@@ -1,11 +1,12 @@
 ﻿using System.Collections.Generic;
+using RediSharp.Enums;
 using RediSharp.RedIL.Enums;
 
 namespace RediSharp.RedIL.Nodes
 {
     class CallLuaFunctionNode : ExpressionNode
     {
-        public string Name { get; set; }
+        public LuaFunction Name { get; set; }
 
         public IList<ExpressionNode> Arguments { get; set; }
 
@@ -15,7 +16,7 @@ namespace RediSharp.RedIL.Nodes
         }
 
         public CallLuaFunctionNode(
-            string name,
+            LuaFunction name,
             DataValueType type,
             IList<ExpressionNode> arguments)
             : base(RedILNodeType.CallLuaFunction, type)
