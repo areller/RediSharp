@@ -98,7 +98,7 @@ namespace RediSharp.RedIL
                 var block = new BlockNode();
                 
                 bool init = true;
-                if (_root == null)
+                if (_root is null)
                 {
                     init = false;
                     _root = new RootNode(block) {Identifiers = _identifiers};
@@ -464,7 +464,7 @@ namespace RediSharp.RedIL
             {
                 _identifiers.Add(variableInitializer.Name);
                 return new VariableDeclareNode(variableInitializer.Name,
-                    variableInitializer.Initializer != null
+                    !(variableInitializer.Initializer is null)
                         ? CastUtilities.CastRedILNode<ExpressionNode>(
                             variableInitializer.Initializer.AcceptVisitor(this))
                         : null);
@@ -556,7 +556,7 @@ namespace RediSharp.RedIL
                     if (child.Type == RedILNodeType.If)
                     {
                         var ifNode = child as IfNode;
-                        if (ifNode.IfTrue != null && ifNode.IfFalse == null)
+                        if (!(ifNode.IfTrue is null) && ifNode.IfFalse is null)
                         {
                             var truthBlock = ifNode.IfTrue as BlockNode;
                             if (truthBlock.Children.Count == 1 &&
@@ -1077,7 +1077,7 @@ namespace RediSharp.RedIL
             var ilResolveResult =
                 annontations.FirstOrDefault(annot => annot is ResolveResult) as ResolveResult;
 
-            if (ilResolveResult != null)
+            if (!(ilResolveResult is null))
             {
                 if (ilResolveResult.Type.Kind == TypeKind.Array)
                 {

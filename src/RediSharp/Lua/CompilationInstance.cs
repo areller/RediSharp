@@ -281,7 +281,7 @@ namespace RediSharp.Lua
                 state.FinishIdent();
 
                 //TODO: Optimize to elseif if needed
-                if (node.IfFalse == null)
+                if (node.IfFalse is null)
                 {
                     state.Write("end");
                 }
@@ -369,7 +369,7 @@ namespace RediSharp.Lua
             {
                 state.Write($"local {node.Name}");
 
-                if (node.Value != null)
+                if (!(node.Value is null))
                 {
                     state.Write(" = ");
                     node.Value.AcceptVisitor(this, state);

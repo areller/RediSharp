@@ -9,7 +9,7 @@ namespace RediSharp.RedIL.Utilities
             where S : RedILNode
         {
             var casted = obj as T;
-            if (casted == null)
+            if (casted is null)
             {
                 throw new RedILException($"Unable to cast node '{typeof(S)}' to '{typeof(T)}'");
             }

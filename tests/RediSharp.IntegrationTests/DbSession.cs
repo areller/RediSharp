@@ -69,12 +69,12 @@ namespace RediSharp.IntegrationTests
 
         private static async Task MakeSureConnected()
         {
-            if (_connection != null) return;
+            if (!(_connection is null)) return;
 
             await _connectionSyncObj.WaitAsync();
             try
             {
-                if (_connection == null)
+                if (_connection is null)
                 {
                     _connection = await ConnectionMultiplexer.ConnectAsync("localhost,allowAdmin=true");
                 }

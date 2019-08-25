@@ -49,7 +49,7 @@ namespace RediSharp.CSharp
                 _referencesByName[top.GetName().Name] = top;
 
                 var refs = top.GetReferencedAssemblies();
-                if (refs != null)
+                if (!(refs is null))
                 {
                     foreach (var r in refs)
                     {

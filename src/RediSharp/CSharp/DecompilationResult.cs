@@ -17,7 +17,7 @@ namespace RediSharp.CSharp
 
         public string[] ArgumentsTupleSubKeys { get; }
 
-        public bool ArgumentsAreTuple => ArgumentsTupleSubKeys != null;
+        public bool ArgumentsAreTuple => !(ArgumentsTupleSubKeys is null);
 
         public DecompilationResult(
             Assembly decompilationAssembly,
