@@ -36,6 +36,22 @@ namespace RediSharp.RedIL.Resolving.Types
                     BinaryExpressionNode.Create(BinaryExpressionOperator.NotEqual, caller, (ConstantValueNode) ""));
             }
         }
+
+        class NullResolver : RedILMemberResolver
+        {
+            public override ExpressionNode Resolve(Context context, ExpressionNode caller)
+            {
+                return new NilNode();
+            }
+        }
+
+        class EmptyStringResolver : RedILMemberResolver
+        {
+            public override ExpressionNode Resolve(Context context, ExpressionNode caller)
+            {
+                return (ConstantValueNode) "";
+            }
+        }
         
         [RedILDataType(DataValueType.String)]
         class RedisValueProxy
@@ -50,6 +66,12 @@ namespace RediSharp.RedIL.Resolving.Types
 
             [RedILResolve(typeof(IsNullOrEmptyResolver))]
             public bool IsNullOrEmpty { get; }
+
+            [RedILResolve(typeof(NullResolver))]
+            public static RedisValue Null { get; }
+
+            [RedILResolve(typeof(EmptyStringResolver))]
+            public static RedisValue EmptyString { get; }
         }
         
         public static Dictionary<Type, Type> GetMapToProxy()
