@@ -7,23 +7,10 @@ namespace RediSharp.Demo
 {
     class Program
     {
-        static bool RedisFunction(ICursor cursor, RedisValue[] args, RedisKey[] keys)
+        static bool RedisFunction(IDatabase cursor, RedisValue[] args, RedisKey[] keys)
         {
-            var dict = new Dictionary<string, int>()
-            {
-                { "Arik", 23 },
-                { "John", 22 }
-            };
-            
-            dict.Add("Benny", 53);
-            var list = new List<string>();
-
-            foreach (var elem in dict)
-            {
-                list.Add(elem.Key + "_" + elem.Value);
-            }
-
-            return true;
+            var ts = TimeSpan.FromSeconds(100);
+            return cursor.StringSet("Hello", "World", ts);;
         }
         
         static bool RedisFunction2(ICursor cursor, RedisValue[] args, RedisKey[] keys)
@@ -72,7 +59,7 @@ namespace RediSharp.Demo
         {
             var connection = await ConnectionMultiplexer.ConnectAsync("localhost");
 
-            Client<ICursor> client = new Client<ICursor>(connection.GetDatabase(0));
+            Client<IDatabase> client = new Client<IDatabase>(connection.GetDatabase(0));
             var handle = client.GetLuaHandle(RedisFunction);
 
             // Printing Lua

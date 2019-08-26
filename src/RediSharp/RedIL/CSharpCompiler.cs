@@ -10,6 +10,7 @@ using ICSharpCode.Decompiler.TypeSystem;
 using RediSharp.CSharp;
 using RediSharp.Enums;
 using RediSharp.RedIL.Enums;
+using RediSharp.RedIL.Extensions;
 using RediSharp.RedIL.Nodes;
 using RediSharp.RedIL.Nodes.Internal;
 using RediSharp.RedIL.Resolving;
@@ -24,7 +25,6 @@ namespace RediSharp.RedIL
         
         class AstVisitor : IAstVisitor<RedILNode>
         {
-            
             private CSharpCompiler _compiler;
             
             private DecompilationResult _csharp;
@@ -35,6 +35,8 @@ namespace RediSharp.RedIL
 
             private RootNode _root;
 
+            private Stack<BlockNode> _blockStack;
+
             public AstVisitor(CSharpCompiler compiler, DecompilationResult csharp)
             {
                 _compiler = compiler;
@@ -44,6 +46,7 @@ namespace RediSharp.RedIL
                 _identifiers.Add(csharp.ArgumentsVariableName);
                 _identifiers.Add(csharp.CursorVariableName);
                 _identifiers.Add(csharp.KeysVariableName);
+                _blockStack = new Stack<BlockNode>();
             }
 
             /*
@@ -104,14 +107,32 @@ namespace RediSharp.RedIL
                     _root = new RootNode(block) {Identifiers = _identifiers};
                 }
 
+                /* No need to flatten implicit blocks for now */
+                /*
                 var children = blockStatement.Children
                     .SelectMany(child => FlattenImplicitBlocks(child.AcceptVisitor(this)))
-                    .Where(child => child.Type != RedILNodeType.Empty);
-
-                foreach (var child in children)
+                    .Where(child => child.Type != RedILNodeType.Empty);*/
+                
+                _blockStack.Push(block);
+                foreach (var child in blockStatement.Children)
                 {
-                    block.Children.Add(child);
+                    var visited = child.AcceptVisitor(this);
+                    if (visited.Type == RedILNodeType.Block)
+                    {
+                        foreach (var innerChild in ((BlockNode) visited).Children)
+                        {
+                            if (innerChild.Type != RedILNodeType.Empty)
+                            {
+                                block.Children.Add(innerChild);
+                            }
+                        }
+                    }
+                    else if (visited.Type != RedILNodeType.Empty)
+                    {
+                        block.Children.Add(visited);
+                    }
                 }
+                _blockStack.Pop();
 
                 if (!init)
                 {
@@ -207,6 +228,7 @@ namespace RediSharp.RedIL
                     Explicit = false
                 };
 
+                _blockStack.Push(blockNode);
                 foreach (var initializer in forStatement.Initializers)
                 {
                     var visited = initializer.AcceptVisitor(this);
@@ -226,6 +248,7 @@ namespace RediSharp.RedIL
                 }
 
                 blockNode.Children.Add(whileNode);
+                _blockStack.Pop();
 
                 return blockNode;
             }
@@ -253,13 +276,13 @@ namespace RediSharp.RedIL
             public RedILNode VisitIfElseStatement(IfElseStatement ifElseStatement)
             {
                 var ifNode = new IfNode();
-                ifNode.Condition =
-                    CastUtilities.CastRedILNode<ExpressionNode>(ifElseStatement.Condition.AcceptVisitor(this));
-                ifNode.IfTrue = ifElseStatement.TrueStatement.AcceptVisitor(this);
-                ifNode.IfFalse = ifElseStatement.FalseStatement.AcceptVisitor(this);
-
-                if (ifNode.IfTrue is NilNode) ifNode.IfTrue = null;
-                if (ifNode.IfFalse is NilNode) ifNode.IfFalse = null;
+                ifNode.Ifs = new[]
+                {
+                    new KeyValuePair<ExpressionNode, RedILNode>(
+                        CastUtilities.CastRedILNode<ExpressionNode>(ifElseStatement.Condition.AcceptVisitor(this)),
+                        ifElseStatement.TrueStatement.AcceptVisitor(this))
+                };
+                ifNode.IfElse = ifElseStatement.FalseStatement.AcceptVisitor(this);
 
                 return ifNode;
             }
@@ -453,12 +476,15 @@ namespace RediSharp.RedIL
                     Explicit = false
                 };
 
+                _blockStack.Push(block);
                 foreach (var variable in variableDeclarationStatement.Variables)
                 {
                     var decl = CastUtilities.CastRedILNode<VariableDeclareNode>(
                         variable.AcceptVisitor(this));
                     block.Children.Add(decl);
                 }
+
+                _blockStack.Pop();
 
                 return block;
             }
@@ -511,7 +537,7 @@ namespace RediSharp.RedIL
 
             private Context GetContext(Expression currentExpr)
             {
-                return new Context(_compiler, _root, currentExpr);
+                return new Context(_compiler, _root, currentExpr, _blockStack.Peek());
             }
             
             private BinaryExpressionNode CreateBinaryExpression(BinaryExpressionOperator op, ExpressionNode left,
@@ -559,9 +585,9 @@ namespace RediSharp.RedIL
                     if (child.Type == RedILNodeType.If)
                     {
                         var ifNode = child as IfNode;
-                        if (!(ifNode.IfTrue is null) && ifNode.IfFalse is null)
+                        if (!(ifNode.Ifs is null) && ifNode.Ifs.Count == 1 && ifNode.IfElse is null)
                         {
-                            var truthBlock = ifNode.IfTrue as BlockNode;
+                            var truthBlock = ifNode.Ifs.First().Value as BlockNode;
                             if (truthBlock.Children.Count == 1 &&
                                 truthBlock.Children.First().Type == RedILNodeType.Continue)
                             {
@@ -571,7 +597,13 @@ namespace RediSharp.RedIL
                                     innerIfBlock.Children.Add(node.Children[j]);
                                 }
 
-                                newBlock.Children.Add(new IfNode(OptimizedNot(ifNode.Condition), innerIfBlock, null));
+                                /*newBlock.Children.Add(new IfNode(OptimizedNot(ifNode.Ifs.First().Key), innerIfBlock, null));*/
+                                newBlock.Children.Add(new IfNode(
+                                    new KeyValuePair<ExpressionNode, RedILNode>[]
+                                    {
+                                        new KeyValuePair<ExpressionNode, RedILNode>(
+                                            OptimizedNot(ifNode.Ifs.First().Key), innerIfBlock)
+                                    }, null));
                                 break;
                             }
                         }
@@ -1112,6 +1144,38 @@ namespace RediSharp.RedIL
             }
 
             return invocResult.Member;
+        }
+
+        public RedILNode IfTable(Context context, DataValueType type, IList<KeyValuePair<ExpressionNode, ExpressionNode>> table)
+        {
+            table = table.Where(kv => !kv.Key.EqualOrNull(ExpressionNode.False)).ToList();
+            var truth = table.SingleOrDefault(kv => kv.Key.EqualOrNull(ExpressionNode.True));
+            if (!(truth.Key is null))
+            {
+                return truth.Value;
+            }
+
+            if (context.IsPartOfBlock())
+            {
+                var ifNode = new IfNode();
+                ifNode.Ifs = table.Select(kv =>
+                        new KeyValuePair<ExpressionNode, RedILNode>(kv.Key,
+                            new BlockNode() {Children = new[] {kv.Value}}))
+                    .ToList();
+                return ifNode;
+            }
+            else
+            {
+                var temp = new TemporaryIdentifierNode(type);
+                var ifNode = new IfNode();
+                ifNode.Ifs = table.Select(kv => new KeyValuePair<ExpressionNode, RedILNode>(kv.Key,
+                    new BlockNode() {Children = new[] {new AssignNode(temp, kv.Value)}})).ToList();
+                
+                context.CurrentBlock.Children.Add(new VariableDeclareNode(null, temp));
+                context.CurrentBlock.Children.Add(ifNode);
+
+                return temp;
+            }
         }
         
         #endregion

@@ -39,6 +39,8 @@ namespace RediSharp.Lua
 
             private Dictionary<LuaFunction, string> _functionPointers;
 
+            private Dictionary<int, string> _tempIdentifiers;
+
             public StringBuilder Builder { get; }
 
             public List<string> FunctionDefinitions { get; }
@@ -63,6 +65,7 @@ namespace RediSharp.Lua
 
                 FunctionDefinitions = new List<string>();
                 _functionPointers = new Dictionary<LuaFunction, string>();
+                _tempIdentifiers = new Dictionary<int, string>();
             }
 
             public string GetFunctionId(LuaFunction functionName)
@@ -86,6 +89,17 @@ namespace RediSharp.Lua
             {
                 var idNum = Interlocked.Increment(ref _lastTempId);
                 return $"_{idNum}";
+            }
+
+            public string GetNewId(int tempId)
+            {
+                if (!_tempIdentifiers.TryGetValue(tempId, out var id))
+                {
+                    id = GetNewId();
+                    _tempIdentifiers.Add(tempId, id);
+                }
+
+                return id;
             }
 
             public void Ident()
@@ -269,33 +283,39 @@ namespace RediSharp.Lua
                 return true;
             }
 
+            public bool VisitTemporaryIdentifierNode(TemporaryIdentifierNode node, CompilationState state)
+            {
+                state.Write(ResolveTemporaryIdentifier(state, node));
+                return true;
+            }
+
             public bool VisitIfNode(IfNode node, CompilationState state)
             {
-                state.Write("if ");
-                node.Condition.AcceptVisitor(this, state);
-                state.Write(" then");
-                state.NewLine();
-                state.Ident();
-                node.IfTrue.AcceptVisitor(this, state);
-                state.NewLine();
-                state.FinishIdent();
-
-                //TODO: Optimize to elseif if needed
-                if (node.IfFalse is null)
+                bool first = true;
+                foreach (var stmt in node.Ifs)
                 {
-                    state.Write("end");
+                    state.Write(first ? "if " : "elseif ");
+                    stmt.Key.AcceptVisitor(this, state);
+                    state.Write(" then");
+                    state.NewLine();
+                    state.Ident();
+                    stmt.Value.AcceptVisitor(this, state);
+                    state.NewLine();
+                    state.FinishIdent();
+                    first = false;
                 }
-                else
+
+                if (!(node.IfElse is null))
                 {
                     state.Write("else");
                     state.NewLine();
                     state.Ident();
-                    node.IfFalse.AcceptVisitor(this, state);
+                    node.IfElse.AcceptVisitor(this, state);
                     state.NewLine();
                     state.FinishIdent();
-                    state.Write("end");
                 }
-
+                
+                state.Write("end");
                 return true;
             }
 
@@ -367,14 +387,22 @@ namespace RediSharp.Lua
 
             public bool VisitVariableDeclareNode(VariableDeclareNode node, CompilationState state)
             {
-                state.Write($"local {node.Name}");
-
-                if (!(node.Value is null))
+                if (node.Value.Type == RedILNodeType.TemporaryParameter)
                 {
-                    state.Write(" = ");
-                    node.Value.AcceptVisitor(this, state);
+                    state.Write("local ");
+                    state.Write(ResolveTemporaryIdentifier(state, node.Value as TemporaryIdentifierNode));
                 }
-                
+                else
+                {
+                    state.Write($"local {node.Name}");
+
+                    if (!(node.Value is null))
+                    {
+                        state.Write(" = ");
+                        node.Value.AcceptVisitor(this, state);
+                    }
+                }
+
                 state.Write(";");
 
                 return true;
@@ -651,6 +679,9 @@ namespace RediSharp.Lua
             }
 
             private string CreateTemporaryIdentifier(CompilationState state) => state.GetNewId();
+
+            private string ResolveTemporaryIdentifier(CompilationState state, TemporaryIdentifierNode node) =>
+                state.GetNewId(node.Id);
         }
 
         private RedILNode _root;

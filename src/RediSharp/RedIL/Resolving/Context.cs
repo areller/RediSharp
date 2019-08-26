@@ -3,7 +3,7 @@ using RediSharp.RedIL.Nodes;
 
 namespace RediSharp.RedIL.Resolving
 {
-    struct Context
+    class Context
     {
         public CSharpCompiler Compiler { get; }
 
@@ -11,11 +11,14 @@ namespace RediSharp.RedIL.Resolving
 
         public Expression CurrentExpression { get; }
 
-        public Context(CSharpCompiler compiler, RootNode root, Expression currentExpr)
+        public BlockNode CurrentBlock { get; }
+
+        public Context(CSharpCompiler compiler, RootNode root, Expression currentExpr, BlockNode currentBlock)
         {
             Compiler = compiler;
             Root = root;
             CurrentExpression = currentExpr;
+            CurrentBlock = currentBlock;
         }
 
         public bool IsInsideStatement()
@@ -26,6 +29,12 @@ namespace RediSharp.RedIL.Resolving
         public bool IsInsideExpression()
         {
             return (CurrentExpression?.Parent?.NodeType ?? NodeType.Unknown) == NodeType.Expression;
+        }
+
+        public bool IsPartOfBlock()
+        {
+            return (CurrentExpression?.Parent?.NodeType ?? NodeType.Unknown) == NodeType.Statement &&
+                   CurrentExpression.Parent is ExpressionStatement;
         }
     }
 }

@@ -33,6 +33,8 @@ namespace RediSharp.RedIL
 
         TReturn VisitIdentifierNode(IdentifierNode node, TState state);
 
+        TReturn VisitTemporaryIdentifierNode(TemporaryIdentifierNode node, TState state);
+
         TReturn VisitIfNode(IfNode node, TState state);
 
         TReturn VisitNilNode(NilNode node, TState state);

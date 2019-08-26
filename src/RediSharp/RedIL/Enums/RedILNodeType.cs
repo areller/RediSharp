@@ -13,6 +13,7 @@ namespace RediSharp.RedIL.Enums
         Constant,
         CallRedisMethod,
         Parameter,
+        TemporaryParameter,
         TableKeyAccess,
         If,
         Return,

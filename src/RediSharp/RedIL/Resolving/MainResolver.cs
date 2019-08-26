@@ -308,7 +308,13 @@ namespace RediSharp.RedIL.Resolving
 
             return replacedSignature
                 .Zip(parameters, (sigParam, param) => (sigParam, param))
-                .All(p => p.sigParam == p.param.Type.ReflectionName);
+                .All(p => p.sigParam == FixParamReflectionName(p.param.Type.ReflectionName));
+        }
+
+        private string FixParamReflectionName(string paramReflectionName)
+        {
+            //TODO: Check if it's enough
+            return paramReflectionName.Replace("[[", "[").Replace("]]", "]");
         }
         
         #endregion

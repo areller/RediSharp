@@ -17,15 +17,17 @@ namespace RediSharp.RedIL.Resolving.Types
                 switch (arguments.Length)
                 {
                     case 3:
-                        return (ConstantValueNode) 3600 * arguments[0] + (ConstantValueNode) 60 * arguments[1] +
-                               arguments[2];
+                        return (ConstantValueNode) 3600000 * arguments[0] + (ConstantValueNode) 60000 * arguments[1] +
+                               (ConstantValueNode) 1000 * arguments[2];
                     case 4:
-                        return (ConstantValueNode) 86400 * arguments[0] + (ConstantValueNode) 3600 * arguments[1] +
-                               (ConstantValueNode) 60 * arguments[2] + arguments[3];
+                        return (ConstantValueNode) 86400000 * arguments[0] +
+                               (ConstantValueNode) 3600000 * arguments[1] +
+                               (ConstantValueNode) 60000 * arguments[2] + (ConstantValueNode) 1000 * arguments[3];
                     case 5:
-                        return (ConstantValueNode) 86400 * arguments[0] + (ConstantValueNode) 3600 * arguments[1] +
-                               (ConstantValueNode) 60 * arguments[2] + arguments[3] +
-                               (ConstantValueNode) 0.001 * arguments[4];
+                        return (ConstantValueNode) 86400000 * arguments[0] +
+                               (ConstantValueNode) 3600000 * arguments[1] +
+                               (ConstantValueNode) 60000 * arguments[2] + (ConstantValueNode) 1000 * arguments[3] +
+                               arguments[4];
                     default:
                         return null;
                 }
@@ -75,7 +77,7 @@ namespace RediSharp.RedIL.Resolving.Types
             }
         }
 
-        [RedILDataType(DataValueType.Float)]
+        [RedILDataType(DataValueType.Integer)]
         class TimeSpanProxy
         {
             [RedILResolve(typeof(ConstructorResolver))]
@@ -93,34 +95,34 @@ namespace RediSharp.RedIL.Resolving.Types
             {
             }
 
-            [RedILResolve(typeof(ValueResolver), (double) 1 / 86400)]
+            [RedILResolve(typeof(ValueResolver), (double) 1 / 86400000)]
             public double TotalDays { get; }
 
-            [RedILResolve(typeof(ValueResolver), (double) 1 / 3600)]
+            [RedILResolve(typeof(ValueResolver), (double) 1 / 3600000)]
             public double TotalHours { get; }
 
-            [RedILResolve(typeof(ValueResolver), (double) 1000)]
+            [RedILResolve(typeof(ValueResolver), (double)1)]
             public double TotalMilliseconds { get; }
 
-            [RedILResolve(typeof(ValueResolver), (double) 1 / 60)]
+            [RedILResolve(typeof(ValueResolver), (double) 1 / 60000)]
             public double TotalMinutes { get; }
 
-            [RedILResolve(typeof(ValueResolver), (double) 1)]
+            [RedILResolve(typeof(ValueResolver), (double) 1/1000)]
             public double TotalSeconds { get; }
 
-            [RedILResolve(typeof(FromMethodResolver), (double) 86400)]
+            [RedILResolve(typeof(FromMethodResolver), (double) 86400000)]
             public static TimeSpan FromDays(double value) => TimeSpan.FromDays(value);
 
-            [RedILResolve(typeof(FromMethodResolver), (double) 3600)]
+            [RedILResolve(typeof(FromMethodResolver), (double) 3600000)]
             public static TimeSpan FromHours(double value) => TimeSpan.FromHours(value);
 
-            [RedILResolve(typeof(FromMethodResolver), (double) 1 / 1000)]
+            [RedILResolve(typeof(FromMethodResolver), (double) 1)]
             public static TimeSpan FromMilliseconds(double value) => TimeSpan.FromMilliseconds(value);
 
-            [RedILResolve(typeof(FromMethodResolver), (double) 60)]
+            [RedILResolve(typeof(FromMethodResolver), (double) 60000)]
             public static TimeSpan FromMinutes(double value) => TimeSpan.FromMinutes(value);
 
-            [RedILResolve(typeof(FromMethodResolver), (double) 1)]
+            [RedILResolve(typeof(FromMethodResolver), (double) 1000)]
             public static TimeSpan FromSeconds(double value) => TimeSpan.FromSeconds(value);
         }
 

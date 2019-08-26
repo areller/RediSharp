@@ -5,6 +5,7 @@ using System.Net;
 using System.Threading.Tasks;
 using RediSharp.Enums;
 using RediSharp.RedIL.Enums;
+using RediSharp.RedIL.Extensions;
 using RediSharp.RedIL.Nodes;
 using RediSharp.RedIL.Resolving.Attributes;
 using StackExchange.Redis;
@@ -13,31 +14,69 @@ namespace RediSharp.RedIL.Resolving.Types
 {
     class DatabaseResolverPack
     {
-        class CallRedisMethodResolver : RedILMethodResolver
+        abstract class RedisMethodResolver : RedILMethodResolver
         {
-            private string _method;
-
-            private DataValueType _returnType;
-
-            public CallRedisMethodResolver(object arg1, object arg2)
+            private static ExpressionNode[] _empty = new ExpressionNode[0];
+            
+            protected IEnumerable<ExpressionNode> EvaluateArray(ExpressionNode node)
             {
-                _method = (string) arg1;
-                _returnType = (DataValueType) arg2;
-            }
+                if (node is null)
+                {
+                    return _empty;
+                }
+                
+                if (node.DataType == DataValueType.Array)
+                {
+                    if (node.Type == RedILNodeType.ArrayTableDefinition)
+                    {
+                        return (node as ArrayTableDefinitionNode).Elements;
+                    }
+                    else
+                    {
+                        return WrapSingle(new CallBuiltinLuaMethodNode(LuaBuiltinMethod.TableUnpack, WrapSingle(node)));
+                    }
+                }
 
-            public override RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
-            {
-                return new CallRedisMethodNode(_method, _returnType, caller,
-                    arguments.SelectMany(arg =>
-                            arg.DataType == DataValueType.Array
-                                ? (arg.Type == RedILNodeType.ArrayTableDefinition
-                                    ? (arg as ArrayTableDefinitionNode).Elements
-                                    : WrapSingle(new CallBuiltinLuaMethodNode(LuaBuiltinMethod.TableUnpack, new ExpressionNode[] {arg})))
-                                : WrapSingle(arg))
-                        .ToArray());
+                return WrapSingle(node);
             }
             
-            private ExpressionNode[] WrapSingle(ExpressionNode node) => new ExpressionNode[] {node};
+            protected ExpressionNode[] WrapSingle(ExpressionNode node) => new ExpressionNode[] {node};
+        }
+        
+        class StringGetResolver : RedisMethodResolver
+        {
+            public override RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
+            {
+                return new CallRedisMethodNode("GET", DataValueType.String, caller,
+                    new List<ExpressionNode>() {arguments.First()});
+            }
+        }
+
+        class StringGetManyResolver : RedisMethodResolver
+        {
+            public override RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
+            {
+                return new CallRedisMethodNode("MGET", DataValueType.Array, caller, EvaluateArray(arguments.First()).ToList());
+            }
+        }
+
+        class StringSetResolver : RedisMethodResolver
+        {
+            public override RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
+            {
+                return context.Compiler.IfTable(context, DataValueType.Boolean, new[]
+                {
+                    new KeyValuePair<ExpressionNode, ExpressionNode>(
+                        arguments.At(2) == ExpressionNode.Nil && arguments.At(3) == ExpressionNode.Nil,
+                        new CallRedisMethodNode("SET", DataValueType.Boolean, caller,
+                            new List<ExpressionNode>() {arguments.At(0), arguments.At(1)})),
+                    new KeyValuePair<ExpressionNode, ExpressionNode>(
+                        arguments.At(2) != ExpressionNode.Nil && arguments.At(3) == ExpressionNode.Nil,
+                        new CallRedisMethodNode("SET", DataValueType.Boolean, caller,
+                            new List<ExpressionNode>()
+                                {arguments.At(0), arguments.At(1), (ConstantValueNode) "PX", arguments.At(2)})),
+                });
+            }
         }
         
         class DatabaseProxy : IDatabase
@@ -45,20 +84,21 @@ namespace RediSharp.RedIL.Resolving.Types
             #region Strings
             
             //GET key
-            [RedILResolve(typeof(CallRedisMethodResolver), "GET {0}", DataValueType.String)]
+            [RedILResolve(typeof(StringGetResolver))]
             public RedisValue StringGet(RedisKey key, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
 
             //MGET key1 key2 ...
-            [RedILResolve(typeof(CallRedisMethodResolver), "MGET {0}", DataValueType.Array)]
+            [RedILResolve(typeof(StringGetManyResolver))]
             public RedisValue[] StringGet(RedisKey[] keys, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
             
             //SET key value [exp]
+            [RedILResolve(typeof(StringSetResolver))]
             public bool StringSet(RedisKey key, RedisValue value, TimeSpan? expiry = null, When when = When.Always, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
