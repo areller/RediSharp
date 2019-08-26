@@ -6,6 +6,14 @@ using RediSharp.RedIL.Resolving.Attributes;
 
 namespace RediSharp.UnitTests.Resolving
 {
+    class SomeKeyResolver : RedILMemberResolver
+    {
+        public override ExpressionNode Resolve(Context context, ExpressionNode caller)
+        {
+            return (ConstantValueNode) "abc";
+        }
+    }
+    
     class SomeInterfaceGreetingResolver : RedILMethodResolver
     {
         private string _prefix;
@@ -17,6 +25,11 @@ namespace RediSharp.UnitTests.Resolving
         
         public override RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
         {
+            if (caller is null)
+            {
+                return arguments.First();
+            }
+            
             return BinaryExpressionNode.Create(BinaryExpressionOperator.StringConcat, BinaryExpressionNode.Create(
                     BinaryExpressionOperator.StringConcat, (ConstantValueNode) _prefix,
                     arguments.First()),
@@ -42,6 +55,12 @@ namespace RediSharp.UnitTests.Resolving
         
         [RedILResolve(typeof(SomeInterfaceGreetingResolver), "Class")]
         public string Greeting(string name) => default;
+
+        [RedILResolve(typeof(SomeInterfaceGreetingResolver), "Static")]
+        public static string StaticGreeting(string name) => default;
+
+        [RedILResolve(typeof(SomeKeyResolver))]
+        public static string SomeKey => default;
     }
     
     public interface ISomeInterface

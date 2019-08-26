@@ -41,5 +41,25 @@ namespace RediSharp.UnitTests.Resolving
             });
             var redIL = _csharpCompiler.Compile(csharp) as RootNode;
         }
+
+        [TestMethod]
+        public void ShouldResolveStaticMethodOfExternalClass()
+        {
+            var csharp = _actionDecompiler.Decompile<ICursor, string>((cursor, args, keys) =>
+                {
+                    return SomeInterace.StaticGreeting("def");
+                });
+            var redIL = _csharpCompiler.Compile(csharp) as RootNode;
+        }
+        
+        [TestMethod]
+        public void ShouldResolveStaticMemberOfExternalClass()
+        {
+            var csharp = _actionDecompiler.Decompile<ICursor, string>((cursor, args, keys) =>
+                {
+                    return SomeInterace.SomeKey;
+                });
+            var redIL = _csharpCompiler.Compile(csharp) as RootNode;
+        }
     }
 }

@@ -356,6 +356,7 @@ namespace RediSharp.RedIL
             {
                 var target = memberReferenceExpression.Target;
                 var isStatic = target is TypeReferenceExpression;
+                /*
                 var resolveResult =
                     memberReferenceExpression.Annotations.FirstOrDefault(annot => annot is MemberResolveResult) as
                         ResolveResult;
@@ -367,7 +368,9 @@ namespace RediSharp.RedIL
                     {
                         throw new RedILException("Unable to find member resolve annotation");
                     }
-                }
+                }*/
+
+                var resolveResult = target.Annotations.FirstOrDefault(annot => annot is ResolveResult) as ResolveResult;
 
                 var resolver = _resolver.ResolveMember(isStatic, resolveResult.Type,
                     memberReferenceExpression.MemberName);
