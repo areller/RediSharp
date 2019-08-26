@@ -1,5 +1,7 @@
 using System.Collections.Generic;
+using System.Linq;
 using RediSharp.RedIL.Enums;
+using RediSharp.RedIL.Extensions;
 
 namespace RediSharp.RedIL.Nodes
 {
@@ -21,5 +23,14 @@ namespace RediSharp.RedIL.Nodes
 
         public override TReturn AcceptVisitor<TReturn, TState>(IRedILVisitor<TReturn, TState> visitor, TState state)
             => visitor.VisitArrayTableDefinitionNode(this, state);
+
+        public override bool Equals(ExpressionNode other)
+        {
+            if (!(other is ArrayTableDefinitionNode)) return false;
+            var arrayDef = (ArrayTableDefinitionNode) other;
+            return Elements.AllEqual(arrayDef.Elements);
+        }
+
+        public override ExpressionNode Simplify() => this;
     }
 }

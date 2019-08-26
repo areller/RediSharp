@@ -1,6 +1,8 @@
 using System.Collections.Generic;
+using System.Linq;
 using RediSharp.Enums;
 using RediSharp.RedIL.Enums;
+using RediSharp.RedIL.Extensions;
 
 namespace RediSharp.RedIL.Nodes
 {
@@ -43,5 +45,14 @@ namespace RediSharp.RedIL.Nodes
 
         public override TReturn AcceptVisitor<TReturn, TState>(IRedILVisitor<TReturn, TState> visitor, TState state)
             => visitor.VisitCallBuiltinLuaMethodNode(this, state);
+
+        public override bool Equals(ExpressionNode other)
+        {
+            if (!(other is CallBuiltinLuaMethodNode)) return false;
+            var callLuaMethod = (CallBuiltinLuaMethodNode) other;
+            return Method == callLuaMethod.Method && Arguments.AllEqual(callLuaMethod.Arguments);
+        }
+
+        public override ExpressionNode Simplify() => new CallBuiltinLuaMethodNode(Method, Arguments.Select(arg => arg.Simplify()).ToList());
     }
 }

@@ -1,4 +1,6 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
+using ICSharpCode.Decompiler.Semantics;
 using RediSharp.RedIL.Enums;
 
 namespace RediSharp.RedIL.Nodes
@@ -21,5 +23,20 @@ namespace RediSharp.RedIL.Nodes
 
         public override TReturn AcceptVisitor<TReturn, TState>(IRedILVisitor<TReturn, TState> visitor, TState state)
             => visitor.VisitDictionaryTableDefinition(this, state);
+
+        public override bool Equals(ExpressionNode other)
+        {
+            if (!(other is DictionaryTableDefinitionNode)) return false;
+            var dict = (DictionaryTableDefinitionNode) other;
+            if (Elements is null && dict.Elements is null)
+                return true;
+            else if ((Elements is null && !(dict.Elements is null)) || (!(Elements is null) && dict.Elements is null))
+                return false;
+            else
+                return Elements.SequenceEqual(dict.Elements,
+                    new KeyValuePairEqualityComparer<ExpressionNode, ExpressionNode>());
+        }
+
+        public override ExpressionNode Simplify() => this;
     }
 }

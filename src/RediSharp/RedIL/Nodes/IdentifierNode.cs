@@ -16,5 +16,14 @@ namespace RediSharp.RedIL.Nodes
 
          public override TReturn AcceptVisitor<TReturn, TState>(IRedILVisitor<TReturn, TState> visitor, TState state)
              => visitor.VisitIdentifierNode(this, state);
+
+         public override bool Equals(ExpressionNode other)
+         {
+             if (!(other is IdentifierNode)) return false;
+             var id = (IdentifierNode) other;
+             return Name == id.Name;
+         }
+
+         public override ExpressionNode Simplify() => this;
     }
 }

@@ -1,4 +1,5 @@
 using RediSharp.RedIL.Enums;
+using RediSharp.RedIL.Extensions;
 
 namespace RediSharp.RedIL.Nodes
 {
@@ -22,5 +23,15 @@ namespace RediSharp.RedIL.Nodes
 
         public override TReturn AcceptVisitor<TReturn, TState>(IRedILVisitor<TReturn, TState> visitor, TState state)
             => visitor.VisitStatusNode(this, state);
+
+        public override bool Equals(ExpressionNode other)
+        {
+            if (!(other is StatusNode)) return false;
+            var status = (StatusNode) other;
+            return Status == status.Status &&
+                   Error.EqualOrNull(status.Error);
+        }
+
+        public override ExpressionNode Simplify() => new StatusNode(Status, Error.Simplify());
     }
 }
