@@ -10,6 +10,7 @@ namespace RediSharp.Enums
         TableDictValues,
         TableDictRemove,
         TableCount,
-        TableClear
+        TableClear,
+        TableDeepUnpack
     }
 }

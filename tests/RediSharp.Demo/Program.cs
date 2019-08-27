@@ -9,8 +9,11 @@ namespace RediSharp.Demo
     {
         static bool RedisFunction(IDatabase cursor, RedisValue[] args, RedisKey[] keys)
         {
-            var ts = TimeSpan.FromSeconds(100);
-            return cursor.StringSet("Hello", "World", ts);;
+            return cursor.StringSet(new[]
+            {
+                new KeyValuePair<RedisKey, RedisValue>("name", "arik"),
+                new KeyValuePair<RedisKey, RedisValue>("age", 23), 
+            });
         }
         
         static bool RedisFunction2(ICursor cursor, RedisValue[] args, RedisKey[] keys)

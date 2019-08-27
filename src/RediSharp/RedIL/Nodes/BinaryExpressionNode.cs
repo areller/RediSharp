@@ -100,11 +100,13 @@ namespace RediSharp.RedIL.Nodes
                     if (areEqual) return True;
                     if (Left.Type == RedILNodeType.Nil) return NotNil(Right) ? False : this;
                     if (Right.Type == RedILNodeType.Nil) return NotNil(Left) ? False : this;
+                    if (NotEqual(Left, Right)) return False;
                     return this;
                 case BinaryExpressionOperator.NotEqual:
                     if (areEqual) return False;
                     if (Left.Type == RedILNodeType.Nil) return NotNil(Right) ? True : this;
                     if (Right.Type == RedILNodeType.Nil) return NotNil(Left) ? True : this;
+                    if (NotEqual(Left, Right)) return True;
                     return this;
                 case BinaryExpressionOperator.Or:
                 case BinaryExpressionOperator.And:
@@ -198,5 +200,17 @@ namespace RediSharp.RedIL.Nodes
         private bool NotNil(ExpressionNode node) => node.Type == RedILNodeType.Constant ||
                                                     node.Type == RedILNodeType.ArrayTableDefinition ||
                                                     node.Type == RedILNodeType.DictionaryTableDefinition;
+
+        private bool NotEqual(ExpressionNode left, ExpressionNode right)
+        {
+            if (left.Type == RedILNodeType.Constant && right.Type == RedILNodeType.Constant)
+            {
+                var leftC = (ConstantValueNode) left;
+                var rightC = (ConstantValueNode) right;
+                return !leftC.EqualOrNull(rightC);
+            }
+
+            return false;
+        }
     }
 }

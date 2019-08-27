@@ -24,7 +24,8 @@ namespace RediSharp.Lua
             { LuaFunction.TableDictValues, "local {{func_name}} = function(tbl) local values = {}; for _, v in pairs(tbl) do table.insert(values, v); end return values; end" },
             { LuaFunction.TableDictRemove, "local {{func_name}} = function(tbl, key) if tbl[key] == nil then return false; end tbl[key] = nil; return true; end" },
             { LuaFunction.TableCount, "local {{func_name}} = function(tbl) local count = 0; for _ in pairs(tbl) do count = count + 1; end return count; end" },
-            { LuaFunction.TableClear, "local {{func_name}} = function(tbl) for k, _ in pairs(tbl) do tbl[k] = nil; end end" }
+            { LuaFunction.TableClear, "local {{func_name}} = function(tbl) for k, _ in pairs(tbl) do tbl[k] = nil; end end" },
+            { LuaFunction.TableDeepUnpack, "local {{func_name}} = function(tbl) local arr = {}; for _, v in ipairs(tbl) do table.insert(arr, v[1]); table.insert(arr, v[2]); end return unpack(arr); end" }
         };
         
         #endregion
@@ -530,9 +531,9 @@ namespace RediSharp.Lua
                     state.NewLine();
                     state.Ident();
                     state.Write($"local {node.CursorName} = ");
-                    state.Write("{key=");
+                    state.Write("{");
                     state.Write(keyTempIdent);
-                    state.Write(",value=");
+                    state.Write(",");
                     state.Write(valueTempIdent);
                     state.Write("};");
                     state.NewLine();

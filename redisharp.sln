@@ -18,6 +18,8 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "files", "files", "{3ED5179E-C06F-4DEC-B168-6A5A11B0C482}"
 ProjectSection(SolutionItems) = preProject
 	README.md = README.md
+	.travis.yml = .travis.yml
+	.gitignore = .gitignore
 EndProjectSection
 EndProject
 Global

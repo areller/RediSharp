@@ -39,24 +39,52 @@ namespace RediSharp.RedIL.Resolving.Types
 
                 return WrapSingle(node);
             }
+
+            protected IEnumerable<ExpressionNode> EvaluateKVArray(ExpressionNode node)
+            {
+                if (node is null)
+                {
+                    return _empty;
+                }
+
+                if (node.DataType == DataValueType.Array)
+                {
+                    if (node.Type == RedILNodeType.ArrayTableDefinition &&
+                        ((ArrayTableDefinitionNode) node).Elements.All(elem =>
+                            elem.Type == RedILNodeType.ArrayTableDefinition))
+                    {
+                        return (node as ArrayTableDefinitionNode).Elements.SelectMany(elem =>
+                            (elem as ArrayTableDefinitionNode).Elements);
+                    }
+                    else
+                    {
+                        return WrapSingle(new CallLuaFunctionNode(LuaFunction.TableDeepUnpack, DataValueType.Array,
+                            WrapSingle(node)));
+                    }
+                }
+
+                return WrapSingle(node);
+            }
             
             protected ExpressionNode[] WrapSingle(ExpressionNode node) => new ExpressionNode[] {node};
         }
-        
-        class StringGetResolver : RedisMethodResolver
-        {
-            public override RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
-            {
-                return new CallRedisMethodNode("GET", DataValueType.String, caller,
-                    new List<ExpressionNode>() {arguments.First()});
-            }
-        }
 
-        class StringGetManyResolver : RedisMethodResolver
+        class SimpleRedisMethodResolver : RedisMethodResolver
         {
+            private string _name;
+
+            private DataValueType _dataType;
+
+            public SimpleRedisMethodResolver(object arg1, object arg2)
+            {
+                _name = (string) arg1;
+                _dataType = (DataValueType) arg2;
+            }
+            
             public override RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
             {
-                return new CallRedisMethodNode("MGET", DataValueType.Array, caller, EvaluateArray(arguments.First()).ToList());
+                return new CallRedisMethodNode(_name, _dataType, caller,
+                    arguments.SelectMany(EvaluateArray).ToList());
             }
         }
 
@@ -67,31 +95,59 @@ namespace RediSharp.RedIL.Resolving.Types
                 return context.Compiler.IfTable(context, DataValueType.Boolean, new[]
                 {
                     new KeyValuePair<ExpressionNode, ExpressionNode>(
-                        arguments.At(2) == ExpressionNode.Nil && arguments.At(3) == ExpressionNode.Nil,
-                        new CallRedisMethodNode("SET", DataValueType.Boolean, caller,
+                        arguments.At(2).IsNil() && arguments.At(3).IsNilOrEmpty(), new CallRedisMethodNode("SET",
+                            DataValueType.Boolean, caller,
                             new List<ExpressionNode>() {arguments.At(0), arguments.At(1)})),
                     new KeyValuePair<ExpressionNode, ExpressionNode>(
-                        arguments.At(2) != ExpressionNode.Nil && arguments.At(3) == ExpressionNode.Nil,
-                        new CallRedisMethodNode("SET", DataValueType.Boolean, caller,
+                        !arguments.At(2).IsNil() && arguments.At(3).IsNilOrEmpty(), new CallRedisMethodNode("SET",
+                            DataValueType.Boolean, caller,
                             new List<ExpressionNode>()
                                 {arguments.At(0), arguments.At(1), (ConstantValueNode) "PX", arguments.At(2)})),
+                    new KeyValuePair<ExpressionNode, ExpressionNode>(
+                        arguments.At(2).IsNil() && !arguments.At(3).IsNilOrEmpty(),
+                        new CallRedisMethodNode("SET", DataValueType.Boolean, caller,
+                            new List<ExpressionNode>() {arguments.At(0), arguments.At(1), arguments.At(3)})),
+                    new KeyValuePair<ExpressionNode, ExpressionNode>(
+                        !arguments.At(2).IsNil() && !arguments.At(3).IsNilOrEmpty(),
+                        new CallRedisMethodNode("SET", DataValueType.Boolean, caller,
+                            new List<ExpressionNode>()
+                            {
+                                arguments.At(0), arguments.At(1), (ConstantValueNode) "PX",
+                                arguments.At(2), arguments.At(3)
+                            }))
                 });
             }
         }
         
+        class StringSetManyResolver : RedisMethodResolver
+        {
+            public override RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
+            {
+                return context.Compiler.IfTable(context, DataValueType.Boolean, new[]
+                {
+                    new KeyValuePair<ExpressionNode, ExpressionNode>(arguments.At(1) != (ConstantValueNode) "NX",
+                        new CallRedisMethodNode("MSET", DataValueType.Boolean, caller,
+                            EvaluateKVArray(arguments.At(0)).ToList())),
+                    new KeyValuePair<ExpressionNode, ExpressionNode>(arguments.At(1) == (ConstantValueNode) "NX",
+                        new CallRedisMethodNode("MSETNX", DataValueType.Boolean, caller,
+                            EvaluateKVArray(arguments.At(0)).ToList())),
+                });
+            }
+        }
+
         class DatabaseProxy : IDatabase
         {
             #region Strings
             
             //GET key
-            [RedILResolve(typeof(StringGetResolver))]
+            [RedILResolve(typeof(SimpleRedisMethodResolver), "GET", DataValueType.String)]
             public RedisValue StringGet(RedisKey key, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
 
             //MGET key1 key2 ...
-            [RedILResolve(typeof(StringGetManyResolver))]
+            [RedILResolve(typeof(SimpleRedisMethodResolver), "MGET", DataValueType.Array)]
             public RedisValue[] StringGet(RedisKey[] keys, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
@@ -105,6 +161,7 @@ namespace RediSharp.RedIL.Resolving.Types
             }
 
             //MSET key1 val1 key2 val2
+            [RedILResolve(typeof(StringSetManyResolver))]
             public bool StringSet(KeyValuePair<RedisKey, RedisValue>[] values, When when = When.Always, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();

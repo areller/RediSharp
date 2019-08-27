@@ -154,7 +154,7 @@ namespace RediSharp.RedIL
 
                 var argument =
                     CastUtilities.CastRedILNode<ExpressionNode>(castExpression.Expression.AcceptVisitor(this));
-                if (argument.Type == RedILNodeType.Nil)
+                if (resType == DataValueType.Unknown || argument.Type == RedILNodeType.Nil)
                 {
                     return argument;
                 }
@@ -393,9 +393,20 @@ namespace RediSharp.RedIL
                     }
                 }*/
 
+                IType type;
                 var resolveResult = target.Annotations.FirstOrDefault(annot => annot is ResolveResult) as ResolveResult;
+                if (resolveResult is null)
+                {
+                    var memberResolveResult = memberReferenceExpression.Annotations.FirstOrDefault(annot => annot is MemberResolveResult) as
+                        MemberResolveResult;
+                    type = memberResolveResult.Member.DeclaringType;
+                }
+                else
+                {
+                    type = resolveResult.Type;
+                }
 
-                var resolver = _resolver.ResolveMember(isStatic, resolveResult.Type,
+                var resolver = _resolver.ResolveMember(isStatic, type,
                     memberReferenceExpression.MemberName);
 
                 var caller = isStatic ? null : CastUtilities.CastRedILNode<ExpressionNode>(target.AcceptVisitor(this));

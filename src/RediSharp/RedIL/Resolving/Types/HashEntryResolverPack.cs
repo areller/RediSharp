@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using RediSharp.RedIL.Enums;
+using RediSharp.RedIL.Extensions;
 using RediSharp.RedIL.Nodes;
 using RediSharp.RedIL.Resolving.Attributes;
 using RediSharp.RedIL.Resolving.CommonResolvers;
@@ -14,11 +15,7 @@ namespace RediSharp.RedIL.Resolving.Types
         {
             public override ExpressionNode Resolve(Context context, ExpressionNode[] arguments, ExpressionNode[] elements)
             {
-                return new DictionaryTableDefinitionNode(new List<KeyValuePair<ExpressionNode, ExpressionNode>>()
-                {
-                    new KeyValuePair<ExpressionNode, ExpressionNode>((ConstantValueNode) "key", arguments[0]),
-                    new KeyValuePair<ExpressionNode, ExpressionNode>((ConstantValueNode) "value", arguments[1])
-                });
+                return new ArrayTableDefinitionNode(new ExpressionNode[] {arguments.At(0), arguments.At(1)});
             }
         }
         
@@ -30,13 +27,13 @@ namespace RediSharp.RedIL.Resolving.Types
             {
             }
             
-            [RedILResolve(typeof(TableAccessMemberResolver), "key")]
+            [RedILResolve(typeof(TableAccessMemberResolver), DataValueType.Integer, 1)]
             public RedisValue Name { get; }
 
-            [RedILResolve(typeof(TableAccessMemberResolver), "value")]
+            [RedILResolve(typeof(TableAccessMemberResolver), DataValueType.Integer, 2)]
             public RedisValue Value { get; }
 
-            [RedILResolve(typeof(TableAccessMemberResolver), "key")]
+            [RedILResolve(typeof(TableAccessMemberResolver), DataValueType.Integer, 1)]
             public RedisValue Key { get; }
         }
         

@@ -32,5 +32,24 @@ namespace RediSharp.RedIL.Extensions
             if (node is null && other is null) return true;
             return node?.Equals(other) ?? false;
         }
+        
+        #region Expression Builders
+
+        public static ExpressionNode IsNil(this ExpressionNode node)
+        {
+            return node == ExpressionNode.Nil;
+        }
+
+        public static ExpressionNode IsNilOrEmpty(this ExpressionNode node)
+        {
+            return node == ExpressionNode.Nil || node == ExpressionNode.Empty;
+        }
+
+        public static ExpressionNode IsNilOrZero(this ExpressionNode node)
+        {
+            return node == ExpressionNode.Nil || node == ExpressionNode.Zero;
+        }
+        
+        #endregion
     }
 }

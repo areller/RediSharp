@@ -31,6 +31,8 @@ namespace RediSharp.RedIL.Nodes
         
         public static readonly ExpressionNode One = new ConstantValueNode(DataValueType.Integer, 1);
         
+        public static readonly ExpressionNode Empty = new ConstantValueNode(DataValueType.String, string.Empty);
+        
         #endregion
 
         #region Operators

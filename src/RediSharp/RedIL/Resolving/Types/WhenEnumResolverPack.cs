@@ -13,11 +13,11 @@ namespace RediSharp.RedIL.Resolving.Types
         {
             private ConstantValueNode _res;
 
-            private static readonly Dictionary<When, int> _map = new Dictionary<When, int>()
+            private static readonly Dictionary<When, string> _map = new Dictionary<When, string>()
             {
-                {When.Always, 0},
-                {When.Exists, 1},
-                {When.NotExists, 2}
+                {When.Always, string.Empty},
+                {When.Exists, "XX"},
+                {When.NotExists, "NX"}
             };
             
             public EnumResolver(object arg)

@@ -16,7 +16,7 @@ namespace RediSharp.UnitTests
         [TestMethod]
         public void ShouldCompileSetCommand()
         {
-            var handle = _client.GetLuaHandle((cursor, args, keys) => { return cursor.Set(keys[0], args[0]); });
+            //var handle = _client.GetLuaHandle((cursor, args, keys) => { return cursor.Set(keys[0], args[0]); });
         }
     }
 }
