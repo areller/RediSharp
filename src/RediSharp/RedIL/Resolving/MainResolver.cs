@@ -14,9 +14,70 @@ namespace RediSharp.RedIL.Resolving
     {
         #region Internal
 
+        interface ITypeAdapter
+        {
+            bool IsTypeParameter();
+
+            bool IsArray();
+
+            bool IsGeneric();
+
+            string Name { get; }
+
+            IList<ITypeAdapter> TypeArguments { get; }
+
+            ITypeAdapter ElementType { get; }
+        }
+
+        class ReflectionTypeAdapter : ITypeAdapter
+        {
+            private Type _type;
+            
+            public ReflectionTypeAdapter(Type type)
+            {
+                _type = type;
+            }
+
+            public bool IsTypeParameter() => _type.IsGenericParameter;
+
+            public bool IsArray() => _type.IsArray;
+
+            public bool IsGeneric() => _type.IsGenericType;
+
+            public string Name => IsTypeParameter() ? _type.Name : _type.FullName;
+
+            public IList<ITypeAdapter> TypeArguments =>
+                _type.GenericTypeArguments.Select(arg => new ReflectionTypeAdapter(arg)).ToArray();
+
+            public ITypeAdapter ElementType => new ReflectionTypeAdapter(_type.GetElementType());
+        }
+
+        class ILSpyTypeAdapter : ITypeAdapter
+        {
+            private IType _type;
+            
+            public ILSpyTypeAdapter(IType type)
+            {
+                _type = type;
+            }
+
+            public bool IsTypeParameter() => _type.Kind == TypeKind.TypeParameter;
+
+            public bool IsArray() => _type.Kind == TypeKind.Array && _type is ArrayType;
+
+            public bool IsGeneric() => _type.TypeArguments.Count > 0;
+
+            public string Name => IsTypeParameter() ? _type.Name : _type.FullName;
+
+            public IList<ITypeAdapter> TypeArguments =>
+                _type.TypeArguments.Select(arg => new ILSpyTypeAdapter(arg)).ToArray();
+
+            public ITypeAdapter ElementType => new ILSpyTypeAdapter(((ArrayType)_type).ElementType);
+        }
+
         class Constructor
         {
-            public string[] Signature { get; set; }
+            public Type[] Signature { get; set; }
 
             public RedILObjectResolver Resolver { get; set; }
         }
@@ -25,7 +86,7 @@ namespace RediSharp.RedIL.Resolving
         {
             public string Name { get; set; }
 
-            public string[] Signature { get; set; }
+            public Type[] Signature { get; set; }
 
             public RedILMethodResolver Resolver { get; set; }
         }
@@ -109,7 +170,7 @@ namespace RediSharp.RedIL.Resolving
                 }
 
                 var signature = ctor.GetParameters()
-                    .Select(param => param.ParameterType.ToString()).ToArray();
+                    .Select(param => param.ParameterType).ToArray();
 
                 var resolver = resolveAttr.CreateObjectResolver();
                 constructors.Add(new Constructor()
@@ -130,7 +191,7 @@ namespace RediSharp.RedIL.Resolving
                 }
 
                 var signature = method.GetParameters()
-                    .Select(param => param.ParameterType.ToString()).ToArray();
+                    .Select(param => param.ParameterType).ToArray();
 
                 var resolver = resolveAttr.CreateMethodResolver();
                 (method.IsStatic ? staticMethods : instanceMethods).Add(new Method()
@@ -289,8 +350,9 @@ namespace RediSharp.RedIL.Resolving
             return typeDef;
         }
 
-        private bool ParametersSignatureMatch(IType type, TypeDefinition typeDef, string[] signature, IParameter[] parameters)
+        private bool ParametersSignatureMatch(IType type, TypeDefinition typeDef, Type[] signature, IParameter[] parameters)
         {
+            /*
             var replacedSignature = new string[signature.Length];
             for (int i = 0; i < signature.Length; i++)
             {
@@ -308,7 +370,36 @@ namespace RediSharp.RedIL.Resolving
 
             return replacedSignature
                 .Zip(parameters, (sigParam, param) => (sigParam, param))
-                .All(p => p.sigParam == FixParamReflectionName(p.param.Type.ReflectionName));
+                .All(p => p.sigParam == FixParamReflectionName(p.param.Type.ReflectionName));*/
+
+            return signature.Length == parameters.Length &&
+                   signature.Zip(parameters, (s, p) => (s, p))
+                       .All(p => TypesEqual(type, typeDef, new ReflectionTypeAdapter(p.s),
+                           new ILSpyTypeAdapter(p.p.Type)));
+        }
+
+        private bool TypesEqual(IType classType, TypeDefinition typeDef, ITypeAdapter sigType, ITypeAdapter paramType)
+        {
+            if (sigType.IsTypeParameter())
+            {
+                sigType = new ILSpyTypeAdapter(classType.TypeArguments[typeDef.ParametersOrdinal[sigType.Name]]);
+            }
+
+            if (sigType.IsArray())
+            {
+                return paramType.IsArray() &&
+                       TypesEqual(classType, typeDef, sigType.ElementType, paramType.ElementType);
+            }
+            else if (sigType.IsGeneric())
+            {
+                return paramType.IsGeneric() && sigType.TypeArguments.Count == paramType.TypeArguments.Count && sigType
+                           .TypeArguments.Zip(paramType.TypeArguments, (s, p) => (s, p))
+                           .All(p => TypesEqual(classType, typeDef, p.s, p.p));
+            }
+            else
+            {
+                return sigType.Name == paramType.Name;
+            }
         }
 
         private string FixParamReflectionName(string paramReflectionName)
