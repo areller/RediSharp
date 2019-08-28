@@ -369,8 +369,8 @@ namespace RediSharp.Lua
             public bool VisitUnaryExpressionNode(UnaryExpressionNode node, CompilationState state)
             {
                 WriteUnaryOperator(state, node.Operator);
-                node.Operand.AcceptVisitor(this, state);
-
+                EncapsulateOrNot(state, node.Operand);
+                
                 return true;
             }
 
@@ -460,6 +460,9 @@ namespace RediSharp.Lua
                         break;
                     case LuaBuiltinMethod.TableConcat:
                         state.Write("table.concat");
+                        break;
+                    case LuaBuiltinMethod.Type:
+                        state.Write("type");
                         break;
                     default:
                         throw new LuaCompilationException($"Unsupported lua method '{node.Method}'");

@@ -12,6 +12,7 @@ namespace RediSharp.Enums
         TableInsert,
         TableRemove,
         TableGetN,
-        TableConcat
+        TableConcat,
+        Type
     }
 }

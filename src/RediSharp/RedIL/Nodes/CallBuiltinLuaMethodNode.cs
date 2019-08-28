@@ -21,7 +21,8 @@ namespace RediSharp.RedIL.Nodes
                 {LuaBuiltinMethod.TableInsert, DataValueType.Unknown},
                 {LuaBuiltinMethod.TableRemove, DataValueType.Integer},
                 {LuaBuiltinMethod.TableGetN, DataValueType.Integer},
-                {LuaBuiltinMethod.TableConcat, DataValueType.String}
+                {LuaBuiltinMethod.TableConcat, DataValueType.String},
+                {LuaBuiltinMethod.Type, DataValueType.String}
             };
         
         public LuaBuiltinMethod Method { get; set; }

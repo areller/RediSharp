@@ -280,9 +280,23 @@ namespace RediSharp.RedIL
                 {
                     new KeyValuePair<ExpressionNode, RedILNode>(
                         CastUtilities.CastRedILNode<ExpressionNode>(ifElseStatement.Condition.AcceptVisitor(this)),
-                        ifElseStatement.TrueStatement.AcceptVisitor(this))
-                };
-                ifNode.IfElse = ifElseStatement.FalseStatement.AcceptVisitor(this);
+                        NullIfNil(ifElseStatement.TrueStatement.AcceptVisitor(this)))
+                }.Where(p => !(p.Value is null)).Where(p => !p.Key.EqualOrNull(ExpressionNode.False)).ToArray();
+                var truth = ifNode.Ifs.FirstOrDefault(p => p.Key.EqualOrNull(ExpressionNode.True));
+                if (!(truth.Key is null))
+                {
+                    return truth.Value;
+                }
+                
+                ifNode.IfElse = NullIfNil(ifElseStatement.FalseStatement.AcceptVisitor(this));
+                if (ifNode.Ifs.Count == 0 && ifNode.IfElse is null)
+                {
+                    return new EmptyNode();
+                }
+                else if (ifNode.Ifs.Count == 0)
+                {
+                    return ifNode.IfElse;
+                }
 
                 return ifNode;
             }
@@ -541,6 +555,106 @@ namespace RediSharp.RedIL
 
                 return resolver.Resolve(GetContext(objectCreateExpression), args.ToArray(), initializerElements);
             }
+            
+            public RedILNode VisitIsExpression(IsExpression isExpression)
+            {
+                var exprVisited = CastUtilities.CastRedILNode<ExpressionNode>(isExpression.Expression.AcceptVisitor(this));
+                if (isExpression.Type.IsNull)
+                {
+                    return CreateBinaryExpression(BinaryExpressionOperator.Equal, exprVisited, ExpressionNode.Nil);
+                }
+
+                DataValueType type;
+                if (isExpression.Type is PrimitiveType)
+                {
+                    type = TypeUtilities.GetValueType(((PrimitiveType) isExpression.Type).KnownTypeCode);
+                }
+                else
+                {
+                    type = DataValueType.Unknown;
+                }
+
+                if (type == DataValueType.Unknown)
+                {
+                    return ExpressionNode.False;
+                }
+
+                if (exprVisited.DataType == DataValueType.Unknown)
+                {
+                    return CreateBinaryExpression(BinaryExpressionOperator.Equal,
+                        new CallBuiltinLuaMethodNode(LuaBuiltinMethod.Type, new[] {exprVisited}),
+                        (ConstantValueNode) LuaTypeNameFromDataValueType(type));
+                }
+
+                return exprVisited.DataType == type ? ExpressionNode.True : ExpressionNode.False;
+            }
+            
+            public RedILNode VisitSwitchStatement(SwitchStatement switchStatement)
+            {
+                BlockNode GetFromSection(SwitchSection section)
+                {
+                    if (section.Statements.Count != 1)
+                    {
+                        throw new RedILException("Expected statements inside switch section to be of length 1");
+                    }
+
+                    var block = CastUtilities.CastRedILNode<BlockNode>(section.Statements.First().AcceptVisitor(this));
+                    var last = block.Children.LastOrDefault();
+                    if (!(last is null) && last.Type == RedILNodeType.Break)
+                    {
+                        block.Children.Remove(last);
+                    }
+
+                    return block;
+                }
+
+                var pivot = CastUtilities.CastRedILNode<ExpressionNode>(switchStatement.Expression.AcceptVisitor(this));
+                var ifNode = new IfNode();
+                var defaultCase =
+                    switchStatement.SwitchSections.FirstOrDefault(s =>
+                        s.CaseLabels.Any(cl => cl.Expression is null || cl.Expression.IsNull));
+                if (!(defaultCase is null))
+                {
+                    switchStatement.SwitchSections.Remove(defaultCase);
+                }
+
+                foreach (var section in switchStatement.SwitchSections)
+                {
+                    if (section.CaseLabels.Count == 0) continue;
+                    var condition = CreateBinaryExpression(BinaryExpressionOperator.Equal, pivot,
+                        CastUtilities.CastRedILNode<ExpressionNode>(section.CaseLabels.First().Expression
+                            .AcceptVisitor(this)));
+                    foreach (var or in section.CaseLabels.Skip(1))
+                    {
+                        condition = CreateBinaryExpression(BinaryExpressionOperator.Or, condition,
+                            CreateBinaryExpression(BinaryExpressionOperator.Equal, pivot,
+                                CastUtilities.CastRedILNode<ExpressionNode>(or.Expression.AcceptVisitor(this))));
+                    }
+
+                    if (condition.EqualOrNull(ExpressionNode.True))
+                    {
+                        return GetFromSection(section);
+                    }
+                    else if (!condition.EqualOrNull(ExpressionNode.False))
+                    {
+                        var block = GetFromSection(section);
+                        ifNode.Ifs.Add(new KeyValuePair<ExpressionNode, RedILNode>(condition, block));
+                    }
+
+                }
+
+                ifNode.IfElse = defaultCase is null ? null : GetFromSection(defaultCase);
+                if (ifNode.Ifs.Count == 0 && ifNode.IfElse is null)
+                {
+                    return new EmptyNode();
+                }
+                else if (ifNode.Ifs.Count == 0)
+                {
+                    return ifNode.IfElse;
+                }
+
+                return ifNode;
+            }
 
             #endregion
 
@@ -635,6 +749,37 @@ namespace RediSharp.RedIL
                 }
 
                 return new UnaryExpressionNode(UnaryExpressionOperator.Not, expr);
+            }
+
+            private string LuaTypeNameFromDataValueType(DataValueType type)
+            {
+                switch (type)
+                {
+                    case DataValueType.Array:
+                        return "table";
+                    case DataValueType.Boolean:
+                        return "boolean";
+                    case DataValueType.Dictionary:
+                        return "table";
+                    case DataValueType.Float:
+                        return "number";
+                    case DataValueType.Integer:
+                        return "number";
+                    case DataValueType.String:
+                        return "string";
+                    case DataValueType.KVPair:
+                        return "table";
+                    default: return "nil";
+                }
+            }
+
+            private RedILNode NullIfNil(RedILNode node)
+            {
+                return node.Type == RedILNodeType.Nil ||
+                       (node.Type == RedILNodeType.Block &&
+                        ((BlockNode) node).Children.SequenceEqual(new[] {ExpressionNode.Nil}))
+                    ? null
+                    : node;
             }
 
             private IEnumerable<RedILNode> FlattenImplicitBlocks(RedILNode node)
@@ -890,11 +1035,6 @@ namespace RediSharp.RedIL
                 throw new NotImplementedException();
             }
 
-            public RedILNode VisitSwitchStatement(SwitchStatement switchStatement)
-            {
-                throw new NotImplementedException();
-            }
-
             public RedILNode VisitSwitchSection(SwitchSection switchSection)
             {
                 throw new NotImplementedException();
@@ -1011,11 +1151,6 @@ namespace RediSharp.RedIL
             }
 
             public RedILNode VisitText(TextNode textNode)
-            {
-                throw new NotImplementedException();
-            }
-
-            public RedILNode VisitIsExpression(IsExpression isExpression)
             {
                 throw new NotImplementedException();
             }
