@@ -1,5 +1,7 @@
 # RediSharp
 
+**This project is currently under development, stay tuned :)**
+
 ![](https://travis-ci.com/areller/RediSharp.svg?branch=master)
 
 RediSharp allows you to write C# code that will execute directly on the Redis server.  
@@ -44,13 +46,13 @@ RediSharp aims to mitigate these issues.
 
 ## TODO List
 
-* Add more Redis commands
-* Add ability to create and manipulate lists/dictionaries
-* Support more of C#'s syntax
-  * ForEach
-  * Switch/Case
-  * Custom methods (?)
-  * Custom types (structs) (?)
+- [ ] Add more Redis commands
+- [x] Add ability to create and manipulate lists/dictionaries
+- Support more of C#'s syntax
+  - [x] ForEach
+  - [x] Switch/Case
+  - [ ] Custom methods (?)
+  - [ ] Custom types (structs) (?)
 * Some refactoring
 * Document
 * Write proper unit tests
