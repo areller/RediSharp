@@ -8,21 +8,26 @@ namespace RediSharp.RedIL.Nodes
 {
     class CallBuiltinLuaMethodNode : ExpressionNode
     {
-        private static readonly Dictionary<LuaBuiltinMethod, DataValueType> MethodTypeTable
-            = new Dictionary<LuaBuiltinMethod, DataValueType>()
+        private static readonly Dictionary<LuaBuiltinMethod, (DataValueType type, string name)> MethodTypeTable
+            = new Dictionary<LuaBuiltinMethod, (DataValueType, string)>()
             {
-                {LuaBuiltinMethod.StringSub, DataValueType.String},
-                {LuaBuiltinMethod.StringToLower, DataValueType.String},
-                {LuaBuiltinMethod.StringToUpper, DataValueType.String},
-                {LuaBuiltinMethod.StringLength, DataValueType.Integer},
-                {LuaBuiltinMethod.StringFind, DataValueType.Integer},
-                {LuaBuiltinMethod.StringGSub, DataValueType.String},
-                {LuaBuiltinMethod.TableUnpack, DataValueType.Array},
-                {LuaBuiltinMethod.TableInsert, DataValueType.Unknown},
-                {LuaBuiltinMethod.TableRemove, DataValueType.Integer},
-                {LuaBuiltinMethod.TableGetN, DataValueType.Integer},
-                {LuaBuiltinMethod.TableConcat, DataValueType.String},
-                {LuaBuiltinMethod.Type, DataValueType.String}
+                {LuaBuiltinMethod.StringSub, (DataValueType.String, "string.sub")},
+                {LuaBuiltinMethod.StringToLower, (DataValueType.String, "string.lower")},
+                {LuaBuiltinMethod.StringToUpper, (DataValueType.String, "string.upper")},
+                {LuaBuiltinMethod.StringLength, (DataValueType.Integer, "string.len")},
+                {LuaBuiltinMethod.StringFind, (DataValueType.Integer, "string.find")},
+                {LuaBuiltinMethod.StringGSub, (DataValueType.String, "string.gsub")},
+                {LuaBuiltinMethod.TableUnpack, (DataValueType.Array, "unpack")},
+                {LuaBuiltinMethod.TableInsert, (DataValueType.Unknown, "table.insert")},
+                {LuaBuiltinMethod.TableRemove, (DataValueType.Integer, "table.remove")},
+                {LuaBuiltinMethod.TableGetN, (DataValueType.Integer, "table.getn")},
+                {LuaBuiltinMethod.TableConcat, (DataValueType.String, "table.concat")},
+                {LuaBuiltinMethod.Type, (DataValueType.String, "type")},
+                {LuaBuiltinMethod.MathAbs, (DataValueType.Float, "math.abs")},
+                {LuaBuiltinMethod.MathMin, (DataValueType.Float, "math.min")},
+                {LuaBuiltinMethod.MathMax, (DataValueType.Float, "math.max")},
+                {LuaBuiltinMethod.JsonEncode, (DataValueType.String, "cjson.encode")},
+                {LuaBuiltinMethod.JsonDecode, (DataValueType.Unknown, "cjson.decode")}
             };
         
         public LuaBuiltinMethod Method { get; set; }
@@ -38,7 +43,7 @@ namespace RediSharp.RedIL.Nodes
         public CallBuiltinLuaMethodNode(
             LuaBuiltinMethod method,
             IList<ExpressionNode> arguments)
-            : base(RedILNodeType.CallLuaMethod, MethodTypeTable[method])
+            : base(RedILNodeType.CallLuaMethod, MethodTypeTable[method].type)
         {
             Method = method;
             Arguments = arguments;

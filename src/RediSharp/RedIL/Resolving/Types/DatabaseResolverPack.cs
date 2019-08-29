@@ -17,6 +17,8 @@ namespace RediSharp.RedIL.Resolving.Types
         abstract class RedisMethodResolver : RedILMethodResolver
         {
             private static ExpressionNode[] _empty = new ExpressionNode[0];
+
+            protected ExpressionNode FormatStringArgument(ExpressionNode arg) => arg.AsString();
             
             protected IEnumerable<ExpressionNode> EvaluateArray(ExpressionNode node)
             {
@@ -29,11 +31,12 @@ namespace RediSharp.RedIL.Resolving.Types
                 {
                     if (node.Type == RedILNodeType.ArrayTableDefinition)
                     {
-                        return (node as ArrayTableDefinitionNode).Elements;
+                        return (node as ArrayTableDefinitionNode).Elements.Select(FormatStringArgument);
                     }
                     else
                     {
-                        return WrapSingle(new CallBuiltinLuaMethodNode(LuaBuiltinMethod.TableUnpack, WrapSingle(node)));
+                        return WrapSingle(new CallLuaFunctionNode(LuaFunction.TableUnpack, DataValueType.Array,
+                            WrapSingle(node)));
                     }
                 }
 
@@ -54,7 +57,7 @@ namespace RediSharp.RedIL.Resolving.Types
                             elem.Type == RedILNodeType.ArrayTableDefinition))
                     {
                         return (node as ArrayTableDefinitionNode).Elements.SelectMany(elem =>
-                            (elem as ArrayTableDefinitionNode).Elements);
+                            (elem as ArrayTableDefinitionNode).Elements).Select(FormatStringArgument);
                     }
                     else
                     {
@@ -97,22 +100,22 @@ namespace RediSharp.RedIL.Resolving.Types
                     new KeyValuePair<ExpressionNode, ExpressionNode>(
                         arguments.At(2).IsNil() && arguments.At(3).IsNilOrEmpty(), new CallRedisMethodNode("SET",
                             DataValueType.Boolean, caller,
-                            new List<ExpressionNode>() {arguments.At(0), arguments.At(1)})),
+                            new List<ExpressionNode>() {arguments.At(0).AsString(), arguments.At(1).AsString()})),
                     new KeyValuePair<ExpressionNode, ExpressionNode>(
                         !arguments.At(2).IsNil() && arguments.At(3).IsNilOrEmpty(), new CallRedisMethodNode("SET",
                             DataValueType.Boolean, caller,
                             new List<ExpressionNode>()
-                                {arguments.At(0), arguments.At(1), (ConstantValueNode) "PX", arguments.At(2)})),
+                                {arguments.At(0).AsString(), arguments.At(1).AsString(), (ConstantValueNode) "PX", arguments.At(2)})),
                     new KeyValuePair<ExpressionNode, ExpressionNode>(
                         arguments.At(2).IsNil() && !arguments.At(3).IsNilOrEmpty(),
                         new CallRedisMethodNode("SET", DataValueType.Boolean, caller,
-                            new List<ExpressionNode>() {arguments.At(0), arguments.At(1), arguments.At(3)})),
+                            new List<ExpressionNode>() {arguments.At(0).AsString(), arguments.At(1).AsString(), arguments.At(3)})),
                     new KeyValuePair<ExpressionNode, ExpressionNode>(
                         !arguments.At(2).IsNil() && !arguments.At(3).IsNilOrEmpty(),
                         new CallRedisMethodNode("SET", DataValueType.Boolean, caller,
                             new List<ExpressionNode>()
                             {
-                                arguments.At(0), arguments.At(1), (ConstantValueNode) "PX",
+                                arguments.At(0).AsString(), arguments.At(1).AsString(), (ConstantValueNode) "PX",
                                 arguments.At(2), arguments.At(3)
                             }))
                 });

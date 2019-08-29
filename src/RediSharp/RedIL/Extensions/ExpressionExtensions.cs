@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using RediSharp.RedIL.Enums;
 using RediSharp.RedIL.Nodes;
 
 namespace RediSharp.RedIL.Extensions
@@ -32,6 +33,14 @@ namespace RediSharp.RedIL.Extensions
             if (node is null && other is null) return true;
             return node?.Equals(other) ?? false;
         }
+
+        public static ExpressionNode AsString(this ExpressionNode arg) =>
+            arg.DataType != DataValueType.String && arg.DataType != DataValueType.Float &&
+            arg.DataType != DataValueType.Integer
+                ? (arg.Type == RedILNodeType.Constant
+                    ? (ConstantValueNode) ((ConstantValueNode) arg).Value.ToString()
+                    : (ExpressionNode) new CastNode(DataValueType.String, arg))
+                : arg;
         
         #region Expression Builders
 

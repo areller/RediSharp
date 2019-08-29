@@ -640,7 +640,6 @@ namespace RediSharp.RedIL
                         var block = GetFromSection(section);
                         ifNode.Ifs.Add(new KeyValuePair<ExpressionNode, RedILNode>(condition, block));
                     }
-
                 }
 
                 ifNode.IfElse = defaultCase is null ? null : GetFromSection(defaultCase);

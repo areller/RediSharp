@@ -14,6 +14,25 @@ namespace RediSharp.Lua
     {
         #region Function Store
         
+        private static readonly Dictionary<LuaBuiltinMethod, string> _builtInMethods =
+            new Dictionary<LuaBuiltinMethod, string>()
+            {
+                { LuaBuiltinMethod.StringSub, "string.sub" },
+                { LuaBuiltinMethod.StringGSub, "string.gsub" },
+                { LuaBuiltinMethod.StringToLower, "string.lower" },
+                { LuaBuiltinMethod.StringToUpper, "string.upper" },
+                { LuaBuiltinMethod.StringLength, "string.len" },
+                { LuaBuiltinMethod.StringFind, "string.find" },
+                { LuaBuiltinMethod.TableUnpack, "unpack" },
+                { LuaBuiltinMethod.TableInsert, "table.insert" },
+                { LuaBuiltinMethod.TableRemove, "table.remove" },
+                { LuaBuiltinMethod.TableGetN, "table.getn" },
+                { LuaBuiltinMethod.TableConcat, "table.concat" },
+                { LuaBuiltinMethod.Type, "type" },
+                { LuaBuiltinMethod.JsonEncode, "cjson.encode" },
+                { LuaBuiltinMethod.JsonDecode, "cjson.decode" }
+            };
+        
         private static readonly Dictionary<LuaFunction, string> _functions = new Dictionary<LuaFunction, string>()
         {
             { LuaFunction.TableArrayContains, "local {{func_name}} = function(tbl, elem) for _, v in ipairs(tbl) do if v == elem then return true; end end return false; end" },
@@ -25,7 +44,8 @@ namespace RediSharp.Lua
             { LuaFunction.TableDictRemove, "local {{func_name}} = function(tbl, key) if tbl[key] == nil then return false; end tbl[key] = nil; return true; end" },
             { LuaFunction.TableCount, "local {{func_name}} = function(tbl) local count = 0; for _ in pairs(tbl) do count = count + 1; end return count; end" },
             { LuaFunction.TableClear, "local {{func_name}} = function(tbl) for k, _ in pairs(tbl) do tbl[k] = nil; end end" },
-            { LuaFunction.TableDeepUnpack, "local {{func_name}} = function(tbl) local arr = {}; for _, v in ipairs(tbl) do table.insert(arr, v[1]); table.insert(arr, v[2]); end return unpack(arr); end" }
+            { LuaFunction.TableDeepUnpack, "local {{func_name}} = function(tbl) local arr = {}; for _, v in ipairs(tbl) do table.insert(arr, v[1]); table.insert(arr, tostring(v[2])); end return unpack(arr); end" },
+            { LuaFunction.TableUnpack, "local {{func_name}} = function(tbl) local arr = {}; for _, v in ipairs(tbl) do table.insert(arr, tostring(v)); end return unpack(arr); end" }
         };
         
         #endregion
@@ -426,48 +446,12 @@ namespace RediSharp.Lua
 
             public bool VisitCallBuiltinLuaMethodNode(CallBuiltinLuaMethodNode node, CompilationState state)
             {
-                switch (node.Method)
+                if (!_builtInMethods.TryGetValue(node.Method, out var method))
                 {
-                    case LuaBuiltinMethod.StringSub:
-                        state.Write("string.sub");
-                        break;
-                    case LuaBuiltinMethod.StringGSub:
-                        state.Write("string.gsub");
-                        break;
-                    case LuaBuiltinMethod.StringToLower:
-                        state.Write("string.lower");
-                        break;
-                    case LuaBuiltinMethod.StringToUpper:
-                        state.Write("string.upper");
-                        break;
-                    case LuaBuiltinMethod.StringLength:
-                        state.Write("string.length");
-                        break;
-                    case LuaBuiltinMethod.StringFind:
-                        state.Write("string.find");
-                        break;
-                    case LuaBuiltinMethod.TableUnpack:
-                        state.Write("unpack");
-                        break;
-                    case LuaBuiltinMethod.TableInsert:
-                        state.Write("table.insert");
-                        break;
-                    case LuaBuiltinMethod.TableRemove:
-                        state.Write("table.remove");
-                        break;
-                    case LuaBuiltinMethod.TableGetN:
-                        state.Write("table.getn");
-                        break;
-                    case LuaBuiltinMethod.TableConcat:
-                        state.Write("table.concat");
-                        break;
-                    case LuaBuiltinMethod.Type:
-                        state.Write("type");
-                        break;
-                    default:
-                        throw new LuaCompilationException($"Unsupported lua method '{node.Method}'");
+                    throw new LuaCompilationException($"Unsupported lua method '{node.Method}'");
                 }
                 
+                state.Write(method);
                 state.Write("(");
                 WriteArguments(state, node.Arguments);
                 state.Write(")");

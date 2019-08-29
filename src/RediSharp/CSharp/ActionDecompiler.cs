@@ -38,7 +38,8 @@ namespace RediSharp.CSharp
             
             var decompiler = new CSharpDecompiler(asm.Location, _assemblyResolver, new DecompilerSettings()
             {
-                ExtensionMethods = false
+                ExtensionMethods = false,
+                NamedArguments = false
             });
             
             var token = action.Method.MetadataToken;

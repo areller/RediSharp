@@ -2,6 +2,11 @@ namespace RediSharp.Enums
 {
     enum LuaBuiltinMethod
     {
+        JsonEncode,
+        JsonDecode,
+        MathAbs,
+        MathMin,
+        MathMax,
         StringSub,
         StringToLower,
         StringToUpper,
