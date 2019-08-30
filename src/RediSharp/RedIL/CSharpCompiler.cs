@@ -385,7 +385,12 @@ namespace RediSharp.RedIL
 
                 var arguments = invocationExpression.Arguments
                     .Select(arg => CastUtilities.CastRedILNode<ExpressionNode>(arg.AcceptVisitor(this))).ToArray();
-
+                if (arguments.Length < invocRes.Parameters.Count)
+                {
+                    var optional = EvaluateOptionalArguments(invocRes.Parameters.Skip(arguments.Length).ToArray());
+                    arguments = arguments.Concat(optional).ToArray();
+                }
+                
                 return resolver.Resolve(GetContext(invocationExpression), caller, arguments);
             }
 
@@ -547,13 +552,18 @@ namespace RediSharp.RedIL
                 var invocRes = _compiler.GetInvocationResolveResult(objectCreateExpression);
                 var resolver = _resolver.ResolveConstructor(invocRes.DeclaringType, invocRes.Parameters.ToArray());
 
-                var args = objectCreateExpression.Arguments.Select(arg =>
-                    CastUtilities.CastRedILNode<ExpressionNode>(arg.AcceptVisitor(this)));
+                var arguments = objectCreateExpression.Arguments.Select(arg =>
+                    CastUtilities.CastRedILNode<ExpressionNode>(arg.AcceptVisitor(this))).ToArray();
+                if (arguments.Length < invocRes.Parameters.Count)
+                {
+                    var optional = EvaluateOptionalArguments(invocRes.Parameters.Skip(arguments.Length).ToArray());
+                    arguments = arguments.Concat(optional).ToArray();
+                }
 
                 var initializerElements = objectCreateExpression.Initializer.Elements
                     .Select(elem => CastUtilities.CastRedILNode<ExpressionNode>(elem.AcceptVisitor(this))).ToArray();
 
-                return resolver.Resolve(GetContext(objectCreateExpression), args.ToArray(), initializerElements);
+                return resolver.Resolve(GetContext(objectCreateExpression), arguments, initializerElements);
             }
             
             public RedILNode VisitIsExpression(IsExpression isExpression)
@@ -748,6 +758,36 @@ namespace RediSharp.RedIL
                 }
 
                 return new UnaryExpressionNode(UnaryExpressionOperator.Not, expr);
+            }
+
+            private IEnumerable<ExpressionNode> EvaluateOptionalArguments(IList<IParameter> args)
+            {
+                foreach (var arg in args)
+                {
+                    if (!arg.IsOptional || !arg.HasConstantValueInSignature)
+                    {
+                        throw new RedILException($"Optional argument must be declared optional and have a constant value in its signature");
+                    }
+
+                    var constant = arg.GetConstantValue();
+                    if (constant is null)
+                    {
+                        yield return new NilNode();
+                    }
+                    else if (arg.Type is PrimitiveType)
+                    {
+                        var primitiveType = TypeUtilities.GetValueType(((PrimitiveType) arg).KnownTypeCode);
+                        yield return new ConstantValueNode(primitiveType, constant);
+                    }
+                    else if (arg.Type.Kind == TypeKind.Enum)
+                    {
+                        
+                    }
+                    else
+                    {
+                        throw new RedILException($"Unsupported type for optional argument '{arg.Type}'");
+                    }
+                }
             }
 
             private string LuaTypeNameFromDataValueType(DataValueType type)
