@@ -2,7 +2,7 @@ using System;
 
 namespace RediSharp.RedIL.Resolving.Attributes
 {
-    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Constructor | AttributeTargets.Field)]
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Enum | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Constructor | AttributeTargets.Field)]
     class RedILResolve : Attribute
     {
         private byte _resolverEnum;
@@ -24,6 +24,10 @@ namespace RediSharp.RedIL.Resolving.Attributes
             else if (resolverType.IsSubclassOf(typeof(RedILObjectResolver)))
             {
                 _resolverEnum = 2;
+            }
+            else if (resolverType.IsSubclassOf(typeof(RedILValueResolver)))
+            {
+                _resolverEnum = 3;
             }
             else
             {
@@ -62,6 +66,16 @@ namespace RediSharp.RedIL.Resolving.Attributes
             }
             
             return Activator.CreateInstance(_resolverType, Arguments) as RedILObjectResolver;
+        }
+
+        public RedILValueResolver CreateValueResolver()
+        {
+            if (_resolverEnum != 3)
+            {
+                throw new RedILException($"Unable to resolve value resolver");
+            }
+            
+            return Activator.CreateInstance(_resolverType, Arguments) as RedILValueResolver;
         }
     }
 }

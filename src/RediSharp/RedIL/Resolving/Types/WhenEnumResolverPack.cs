@@ -9,17 +9,17 @@ namespace RediSharp.RedIL.Resolving.Types
 {
     class WhenEnumResolverPack
     {
+        private static readonly Dictionary<When, string> _map = new Dictionary<When, string>()
+        {
+            {When.Always, string.Empty},
+            {When.Exists, "XX"},
+            {When.NotExists, "NX"}
+        };
+        
         class EnumResolver : RedILMemberResolver
         {
             private ConstantValueNode _res;
 
-            private static readonly Dictionary<When, string> _map = new Dictionary<When, string>()
-            {
-                {When.Always, string.Empty},
-                {When.Exists, "XX"},
-                {When.NotExists, "NX"}
-            };
-            
             public EnumResolver(object arg)
             {
                 _res = (ConstantValueNode) _map[(When) arg];
@@ -30,8 +30,18 @@ namespace RediSharp.RedIL.Resolving.Types
                 return _res;
             }
         }
+
+        class EnumValueResolver : RedILValueResolver
+        {
+            public override ExpressionNode Resolve(Context context, object value)
+            {
+                var when = (When) value;
+                return (ConstantValueNode) _map[when];
+            }
+        }
         
-        [RedILDataType(DataValueType.Integer)]
+        [RedILDataType(DataValueType.String)]
+        [RedILResolve(typeof(EnumValueResolver))]
         enum WhenProxy
         {
             [RedILResolve(typeof(EnumResolver), When.Always)]

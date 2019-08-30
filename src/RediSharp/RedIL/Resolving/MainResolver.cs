@@ -102,6 +102,8 @@ namespace RediSharp.RedIL.Resolving
         {
             public DataValueType DataType { get; set; }
 
+            public RedILValueResolver ValueResolver { get; set; }
+
             public Dictionary<string, int> ParametersOrdinal { get; set; }
 
             public Dictionary<int, List<Constructor>> Constructors { get; set; }
@@ -151,6 +153,14 @@ namespace RediSharp.RedIL.Resolving
             if (!(dataTypeAttr is null))
             {
                 dataType = dataTypeAttr.Type;
+            }
+
+            RedILValueResolver valueResolver = null;
+            var valueResolveAttr = proxy.GetCustomAttributes()
+                .FirstOrDefault(attr => attr is RedILResolve) as RedILResolve;
+            if (!(valueResolveAttr is null))
+            {
+                valueResolver = valueResolveAttr.CreateValueResolver();
             }
 
             var constructors = new List<Constructor>();
@@ -245,6 +255,7 @@ namespace RediSharp.RedIL.Resolving
             _typeDefs.Add(type.FullName, new TypeDefinition()
             {
                 DataType = dataType,
+                ValueResolver = valueResolver,
                 ParametersOrdinal = paramsOrdinal,
                 Constructors = constructors.GroupBy(c => c.Signature.Length).ToDictionary(g => g.Key, g => g.ToList()),
                 InstanceMethods = instanceMethods.GroupBy(m => (m.Name, m.Signature.Length)).ToDictionary(g => g.Key, g => g.ToList()),
@@ -258,6 +269,12 @@ namespace RediSharp.RedIL.Resolving
         {
             var typeDef = FindTypeDefinition(type);
             return typeDef.DataType;
+        }
+
+        public RedILValueResolver ResolveValue(IType type)
+        {
+            var typeDef = FindTypeDefinition(type);
+            return typeDef.ValueResolver;
         }
         
         public RedILMemberResolver ResolveMember(bool isStatic, IType type, string member)
@@ -429,6 +446,7 @@ namespace RediSharp.RedIL.Resolving
             AddPack(TimeSpanResolverPack.GetMapToProxy());
             AddPack(DateTimeResolverPack.GetMapToProxy());
             AddPack(WhenEnumResolverPack.GetMapToProxy());
+            AddPack(CommandFlagsResolverPack.GetMapToProxy());
             
             #endregion
         }

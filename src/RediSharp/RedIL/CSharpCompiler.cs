@@ -387,7 +387,8 @@ namespace RediSharp.RedIL
                     .Select(arg => CastUtilities.CastRedILNode<ExpressionNode>(arg.AcceptVisitor(this))).ToArray();
                 if (arguments.Length < invocRes.Parameters.Count)
                 {
-                    var optional = EvaluateOptionalArguments(invocRes.Parameters.Skip(arguments.Length).ToArray());
+                    var optional = EvaluateOptionalArguments(invocationExpression,
+                        invocRes.Parameters.Skip(arguments.Length).ToArray());
                     arguments = arguments.Concat(optional).ToArray();
                 }
                 
@@ -556,7 +557,8 @@ namespace RediSharp.RedIL
                     CastUtilities.CastRedILNode<ExpressionNode>(arg.AcceptVisitor(this))).ToArray();
                 if (arguments.Length < invocRes.Parameters.Count)
                 {
-                    var optional = EvaluateOptionalArguments(invocRes.Parameters.Skip(arguments.Length).ToArray());
+                    var optional = EvaluateOptionalArguments(objectCreateExpression,
+                        invocRes.Parameters.Skip(arguments.Length).ToArray());
                     arguments = arguments.Concat(optional).ToArray();
                 }
 
@@ -760,7 +762,7 @@ namespace RediSharp.RedIL
                 return new UnaryExpressionNode(UnaryExpressionOperator.Not, expr);
             }
 
-            private IEnumerable<ExpressionNode> EvaluateOptionalArguments(IList<IParameter> args)
+            private IEnumerable<ExpressionNode> EvaluateOptionalArguments(Expression currentExpr, IList<IParameter> args)
             {
                 foreach (var arg in args)
                 {
@@ -781,7 +783,10 @@ namespace RediSharp.RedIL
                     }
                     else if (arg.Type.Kind == TypeKind.Enum)
                     {
-                        
+                        var resolver = _resolver.ResolveValue(arg.Type);
+                        yield return resolver is null
+                            ? ExpressionNode.Nil
+                            : resolver.Resolve(GetContext(currentExpr), constant);
                     }
                     else
                     {
