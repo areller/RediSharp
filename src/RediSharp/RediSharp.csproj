@@ -7,6 +7,9 @@
     <PackageId>RediSharp</PackageId>
     <Authors>areller</Authors>
     <Company>areller</Company>
+
+    <RepositoryUrl>https://github.com/areller/RediSharp.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 
   <ItemGroup>
