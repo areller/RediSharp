@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using ICSharpCode.Decompiler;
 using ICSharpCode.Decompiler.CSharp;
 using ICSharpCode.Decompiler.CSharp.Resolver;
 using ICSharpCode.Decompiler.CSharp.Syntax;
@@ -426,10 +427,18 @@ namespace RediSharp.RedIL
                     type = resolveResult.Type;
                 }
 
+                var targetExpr = CastUtilities.CastRedILNode<ExpressionNode>(target.AcceptVisitor(this));
+
+                if (type.IsAnonymousType())
+                {
+                    var dataType = _compiler.ResolveExpressionType(memberReferenceExpression);
+                    return new TableKeyAccessNode(targetExpr, (ConstantValueNode) memberReferenceExpression.MemberName, dataType);
+                }
+
                 var resolver = _resolver.ResolveMember(isStatic, type,
                     memberReferenceExpression.MemberName);
 
-                var caller = isStatic ? null : CastUtilities.CastRedILNode<ExpressionNode>(target.AcceptVisitor(this));
+                var caller = isStatic ? null : targetExpr;
 
                 return resolver.Resolve(GetContext(memberReferenceExpression), caller);
             }
@@ -666,6 +675,26 @@ namespace RediSharp.RedIL
 
                 return ifNode;
             }
+            
+            public RedILNode VisitAnonymousTypeCreateExpression(
+                AnonymousTypeCreateExpression anonymousTypeCreateExpression)
+            {
+                var kvs = new List<KeyValuePair<ExpressionNode, ExpressionNode>>();
+                foreach (var init in anonymousTypeCreateExpression.Initializers)
+                {
+                    var named = init as NamedExpression;
+                    if (named is null)
+                    {
+                        throw new RedILException(
+                            $"Anonymous object declaration can only be done via named expressions");
+                    }
+
+                    var expr = CastUtilities.CastRedILNode<ExpressionNode>(named.Expression.AcceptVisitor(this));
+                    kvs.Add(new KeyValuePair<ExpressionNode, ExpressionNode>((ConstantValueNode) named.Name, expr));
+                }
+                
+                return new DictionaryTableDefinitionNode(kvs);
+            }
 
             #endregion
 
@@ -871,12 +900,6 @@ namespace RediSharp.RedIL
             #region Unused
 
             public RedILNode VisitAnonymousMethodExpression(AnonymousMethodExpression anonymousMethodExpression)
-            {
-                throw new NotImplementedException();
-            }
-
-            public RedILNode VisitAnonymousTypeCreateExpression(
-                AnonymousTypeCreateExpression anonymousTypeCreateExpression)
             {
                 throw new NotImplementedException();
             }

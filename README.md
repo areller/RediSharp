@@ -70,6 +70,7 @@ RediSharp aims to mitigate these issues.
 
 * Primitive Types, Arrays, Dictionaries
 * Conditions, Switch Statements, For/While/ForEach loops
+* Anonymous Types
 * TimeSpan
 * String Operations (Join, Split, etc...)
 * Math (Not All)
