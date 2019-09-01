@@ -427,18 +427,16 @@ namespace RediSharp.RedIL
                     type = resolveResult.Type;
                 }
 
-                var targetExpr = CastUtilities.CastRedILNode<ExpressionNode>(target.AcceptVisitor(this));
-
                 if (type.IsAnonymousType())
                 {
                     var dataType = _compiler.ResolveExpressionType(memberReferenceExpression);
-                    return new TableKeyAccessNode(targetExpr, (ConstantValueNode) memberReferenceExpression.MemberName, dataType);
+                    return new TableKeyAccessNode(CastUtilities.CastRedILNode<ExpressionNode>(target.AcceptVisitor(this)), (ConstantValueNode) memberReferenceExpression.MemberName, dataType);
                 }
 
                 var resolver = _resolver.ResolveMember(isStatic, type,
                     memberReferenceExpression.MemberName);
 
-                var caller = isStatic ? null : targetExpr;
+                var caller = isStatic ? null : CastUtilities.CastRedILNode<ExpressionNode>(target.AcceptVisitor(this));
 
                 return resolver.Resolve(GetContext(memberReferenceExpression), caller);
             }
