@@ -1,61 +1,35 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using RediSharp.Lib;
 using StackExchange.Redis;
 
 namespace RediSharp.Demo
 {
     class Program
     {
-        static bool RedisFunction(IDatabase cursor, RedisValue[] args, RedisKey[] keys)
+        static RedisValue[] RedisFunction(IDatabase cursor, RedisValue[] args, RedisKey[] keys)
         {
-            return cursor.StringSet(new[]
+            var dict = new Dictionary<string, List<int>>()
             {
-                new KeyValuePair<RedisKey, RedisValue>("name", "arik"),
-                new KeyValuePair<RedisKey, RedisValue>("age", 23), 
-            });
-        }
-        
-        static bool RedisFunction2(ICursor cursor, RedisValue[] args, RedisKey[] keys)
-        {
-            /*
-            var arr = new int[] {1, 2, 3};
-            string text = string.Concat("A", "B");
-            string[] parts = text.Split(",");
-            List<int> lst2 = new List<int>();
-            lst2.Add(3);
-            IList<int> lst = new List<int>();
-            lst.Add(2);
-            cursor.Set("key2", lst.Count);
-            return cursor.Set("key", arr.GetLength(0));*/
-
-            var dd = new Dictionary<string, int>()
-            {
-                {"Arik", 23},
-                {"John", 21}
+                {"abc", new List<int>() {1, 2, 3}},
+                {"cde", new List<int>() {3, 4, 5}}
             };
-            var kv = new KeyValuePair<int, int>(1, 2);
-            var ts = new TimeSpan(1, 1, 1);
-            
-            var t1 = TimeSpan.FromDays(1);
-            var t2 = TimeSpan.FromDays(2);
-            var arr = new int[] {1, 2};
-            var list = new List<int>() {3, 4};
-            var arr2 = new RedisValue[] {"a", "b"};
-            
-            var dict = new Dictionary<int, int>();
-            dict.Add(1, 2);
-            var list3 = new List<int>();
-            list3.Add(4);
 
-            cursor.Set("length", arr.Length);
-            cursor.Set("length2", list.Count);
-            cursor.Set("length3", arr2.Length);
-            cursor.Set("length4", arr.GetLength(0));
-            cursor.Set("length5", list.IndexOf(3));
-            cursor.Set("key", (t1 + t2).Seconds);
+            foreach (var elem in dict)
+            {
+                cursor.SetAdd("names", elem.Key);
+                foreach (var num in elem.Value)
+                {
+                    cursor.SetAdd($"{elem.Key}_nums", num);
+                }
+            }
 
-            return true;
+            var union = cursor.SetCombine(SetOperation.Union, new RedisKey[] {"abc_nums", "cde_nums"});
+            var ts = TimeSpan.FromSeconds((int?) cursor.StringGet("exp") ?? 5);
+            cursor.StringSet("json", Json.Encode(union), ts);
+
+            return union;
         }
         
         static async Task Main(string[] args)

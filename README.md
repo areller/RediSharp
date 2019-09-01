@@ -53,6 +53,13 @@ return array;
 
 ```
 
+## More Documents
+* [How to Use](./docs/how_to_use.md)
+
+## Contributing
+There are currently no exact guidelines/rules for contributing, but it's always welcome :)  
+Feel free to clone the repository, play with it, open issues, submit pull requests or email me at arelle.gm@gmail.com
+
 ## Why?
 
 When we execute Lua scripts from C#, we lose a lot of the advanges that the C# compiler and the IDE offer, such as auto completion, compile-time error checking, debugging, and many more.  

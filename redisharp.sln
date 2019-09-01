@@ -20,6 +20,7 @@ ProjectSection(SolutionItems) = preProject
 	README.md = README.md
 	.travis.yml = .travis.yml
 	.gitignore = .gitignore
+	deploy.sh = deploy.sh
 EndProjectSection
 EndProject
 Global
