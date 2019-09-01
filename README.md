@@ -2,7 +2,9 @@
 
 This project is currently under development, stay tuned :)
 
-![](https://travis-ci.com/areller/RediSharp.svg?branch=master)
+![](https://travis-ci.com/areller/RediSharp.svg?branch=master)    
+
+[![Nuget](https://img.shields.io/nuget/v/RediSharp)](https://www.nuget.org/packages/RediSharp)
 
 RediSharp allows you to write C# code that will execute directly on the Redis server.  
 
