@@ -5,6 +5,7 @@
     <LangVersion>7.1</LangVersion>
 
     <PackageId>RediSharp</PackageId>
+    <PackageDescription>Running C# function on Redis</PackageDescription>
     <Authors>areller</Authors>
     <Company>areller</Company>
 
