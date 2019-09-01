@@ -5,7 +5,6 @@ before_script:
   - sudo redis-server /etc/redis/redis.conf --port 6379
 script:
   - dotnet restore
-  - dotnet test
 deploy:
   provider: script
   on:
