@@ -4,7 +4,7 @@ namespace RediSharp.RedIL.Nodes
 {
     class VariableDeclareNode : RedILNode
     {
-        public string Name { get; set; }
+        public ExpressionNode Name { get; set; }
 
         public ExpressionNode Value { get; set; }
 
@@ -12,6 +12,13 @@ namespace RediSharp.RedIL.Nodes
 
         public VariableDeclareNode(
             string name,
+            ExpressionNode value)
+            : this((ConstantValueNode) name, value)
+        {
+        }
+
+        public VariableDeclareNode(
+            ExpressionNode name,
             ExpressionNode value)
             : base(RedILNodeType.VariableDeclaration)
         {

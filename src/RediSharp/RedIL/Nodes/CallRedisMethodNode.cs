@@ -8,7 +8,7 @@ namespace RediSharp.RedIL.Nodes
 {
     class CallRedisMethodNode : ExpressionNode
     {
-        public string Method { get; set; }
+        public ExpressionNode Method { get; set; }
 
         public ExpressionNode Caller { get; set; }
 
@@ -22,6 +22,15 @@ namespace RediSharp.RedIL.Nodes
 
         public CallRedisMethodNode(
             string method,
+            DataValueType type,
+            ExpressionNode caller,
+            IList<ExpressionNode> arguments)
+            : this((ConstantValueNode) method, type, caller, arguments)
+        {
+        }
+
+        public CallRedisMethodNode(
+            ExpressionNode method,
             DataValueType type,
             ExpressionNode caller,
             IList<ExpressionNode> arguments)
@@ -39,7 +48,7 @@ namespace RediSharp.RedIL.Nodes
         {
             if (!(other is CallRedisMethodNode)) return false;
             var callMethod = (CallRedisMethodNode) other;
-            return Method == callMethod.Method &&
+            return Method.EqualOrNull(callMethod.Method) &&
                    Caller.EqualOrNull(callMethod.Caller) &&
                    Arguments.AllEqual(callMethod.Arguments);
         }

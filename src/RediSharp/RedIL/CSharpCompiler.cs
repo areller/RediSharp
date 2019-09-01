@@ -778,10 +778,27 @@ namespace RediSharp.RedIL
                     }
                     else if (arg.Type is PrimitiveType)
                     {
-                        var primitiveType = TypeUtilities.GetValueType(((PrimitiveType) arg).KnownTypeCode);
+                        var typeCode = ((PrimitiveType) arg).KnownTypeCode;
+                        if (typeCode == KnownTypeCode.Double)
+                        {
+                            //TODO: Find a way to handle it in the double value resolver
+                            double num = (double) constant;
+                            if (double.IsPositiveInfinity(num))
+                            {
+                                yield return (ConstantValueNode) "+inf";
+                                continue;
+                            }
+                            else if (double.IsNegativeInfinity(num))
+                            {
+                                yield return (ConstantValueNode) "-inf";
+                                continue;
+                            }
+                        }
+                        
+                        var primitiveType = TypeUtilities.GetValueType(typeCode);
                         yield return new ConstantValueNode(primitiveType, constant);
                     }
-                    else if (arg.Type.Kind == TypeKind.Enum)
+                    else if (arg.Type.Kind == TypeKind.Enum || arg.Type.Kind == TypeKind.Struct)
                     {
                         var resolver = _resolver.ResolveValue(arg.Type);
                         yield return resolver is null
@@ -1360,12 +1377,32 @@ namespace RediSharp.RedIL
                 var ifNode = new IfNode();
                 ifNode.Ifs = table.Select(kv => new KeyValuePair<ExpressionNode, RedILNode>(kv.Key,
                     new BlockNode() {Children = new[] {new AssignNode(temp, kv.Value)}})).ToList();
-                
-                context.CurrentBlock.Children.Add(new VariableDeclareNode(null, temp));
+
+                context.CurrentBlock.Children.Add(new VariableDeclareNode(temp, null));
                 context.CurrentBlock.Children.Add(ifNode);
 
                 return temp;
             }
+        }
+
+        public ExpressionNode Dictionary(Context context, string dictName, DictionaryTableDefinitionNode dict, ExpressionNode key)
+        {
+            if (key.Type == RedILNodeType.Constant)
+            {
+                var constKey = (ConstantValueNode) key;
+                var val = dict.Elements.FirstOrDefault(kv => kv.Key.Equals(constKey));
+                if (val.Key is null)
+                {
+                    throw new RedILException($"Could not find key '{constKey.Value}' in dictionary");
+                }
+
+                return val.Value;
+            }
+
+            var temp = new TemporaryIdentifierNode("_s_" + dictName, DataValueType.Dictionary);
+            context.Root.GlobalVariables.Add(
+                new VariableDeclareNode(temp, dict));
+            return new TableKeyAccessNode(temp, key, DataValueType.Unknown);
         }
         
         #endregion

@@ -7,6 +7,7 @@ using RediSharp.RedIL.Enums;
 using RediSharp.RedIL.Nodes;
 using RediSharp.RedIL.Resolving.Attributes;
 using RediSharp.RedIL.Resolving.Types;
+using StackExchange.Redis;
 
 namespace RediSharp.RedIL.Resolving
 {
@@ -437,6 +438,7 @@ namespace RediSharp.RedIL.Resolving
             AddPack(DatabaseResolverPack.GetMapToProxy());
             AddPack(DictionaryResolverPack.GetMapToProxy());
             AddPack(HashEntryResolverPack.GetMapToProxy());
+            AddPack(SortedSetEntryResolverPack.GetMapToProxy());
             AddPack(KeyValuePairResolverPack.GetMapToProxy());
             AddPack(ListResolverPack.GetMapToProxy());
             AddPack(NullableResolverPack.GetMapToProxy());
@@ -446,7 +448,12 @@ namespace RediSharp.RedIL.Resolving
             AddPack(TimeSpanResolverPack.GetMapToProxy());
             AddPack(DateTimeResolverPack.GetMapToProxy());
             AddPack(WhenEnumResolverPack.GetMapToProxy());
+            AddPack(SetOperationEnumResolverPack.GetMapToProxy());
+            AddPack(AggregateEnumResolverPack.GetMapToProxy());
             AddPack(CommandFlagsResolverPack.GetMapToProxy());
+            AddPack(ExcludeEnumResolverPack.GetMapToProxy());
+            AddPack(OrderEnumResolverPack.GetMapToProxy());
+            AddPack(DoubleResolverPack.GetMapToProxy());
             
             #endregion
         }

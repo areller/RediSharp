@@ -12,6 +12,8 @@ namespace RediSharp.Enums
         TableCount,
         TableClear,
         TableUnpack,
-        TableDeepUnpack
+        TableDeepUnpack,
+        TableGroupToKV,
+        TableGroupToKVReverse
     }
 }

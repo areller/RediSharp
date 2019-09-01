@@ -52,5 +52,10 @@ namespace RediSharp.RedIL.Nodes
         }
 
         public override ExpressionNode Simplify() => this;
+
+        public override string ToString()
+        {
+            return Value.ToString();
+        }
     }
 }

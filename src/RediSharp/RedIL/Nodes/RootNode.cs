@@ -5,6 +5,8 @@ namespace RediSharp.RedIL.Nodes
 {
     class RootNode : RedILNode
     {
+        public IList<VariableDeclareNode> GlobalVariables { get; set; }
+
         public RedILNode Body { get; set; }
 
         public HashSet<string> Identifiers { get; set; }
@@ -12,6 +14,7 @@ namespace RediSharp.RedIL.Nodes
         public RootNode(RedILNode body = null)
             : base(RedILNodeType.Root)
         {
+            GlobalVariables = new List<VariableDeclareNode>();
             Body = body;
         }
 

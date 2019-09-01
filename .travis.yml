@@ -7,6 +7,7 @@ script:
   - dotnet restore
   - dotnet test
 deploy:
+  provider: script
   on:
     tags: true
     branch: master

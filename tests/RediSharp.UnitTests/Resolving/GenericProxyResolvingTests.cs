@@ -108,7 +108,7 @@ namespace RediSharp.UnitTests.Resolving
             var dec = block.Children.First() as VariableDeclareNode;
             var ret = block.Children.Last() as ReturnNode;
             ret.Value.Type.Should().Be(RedILNodeType.Parameter);
-            (ret.Value as IdentifierNode).Name.Should().Be(dec.Name);
+            (ret.Value as IdentifierNode).Name.Should().Be(dec.Name.ToString());
         }
 
         [TestMethod]
@@ -125,7 +125,7 @@ namespace RediSharp.UnitTests.Resolving
             var dec = block.Children.First() as VariableDeclareNode;
             var ret = block.Children.Last() as ReturnNode;
             ret.Value.Type.Should().Be(RedILNodeType.Parameter);
-            (ret.Value as IdentifierNode).Name.Should().Be(dec.Name);
+            (ret.Value as IdentifierNode).Name.Should().Be(dec.Name.ToString());
         }
     }
 }

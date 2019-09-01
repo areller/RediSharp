@@ -52,8 +52,18 @@ namespace RediSharp.RedIL.Resolving.Types
                 return (ConstantValueNode) "";
             }
         }
+
+        class ValueResolver : RedILValueResolver
+        {
+            public override ExpressionNode Resolve(Context context, object value)
+            {
+                var redisVal = (RedisValue) value;
+                return redisVal.HasValue ? (ConstantValueNode) redisVal.ToString() : ExpressionNode.Nil;
+            }
+        }
         
         [RedILDataType(DataValueType.String)]
+        [RedILResolve(typeof(ValueResolver))]
         class RedisValueProxy
         {
             [RedILResolve(typeof(HasValueResolver))]

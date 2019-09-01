@@ -14,13 +14,78 @@ namespace RediSharp.RedIL.Resolving.Types
 {
     class DatabaseResolverPack
     {
+        #region Common Dictionaries
+
+        private static readonly DictionaryTableDefinitionNode _zsetRangeByRankOrder = new DictionaryTableDefinitionNode(
+            new[]
+            {
+                new KeyValuePair<ExpressionNode, ExpressionNode>((ConstantValueNode) 0, (ConstantValueNode) "ZRANGE"),
+                new KeyValuePair<ExpressionNode, ExpressionNode>((ConstantValueNode) 1,
+                    (ConstantValueNode) "ZREVRANGE"),
+            });
+
+        private static readonly DictionaryTableDefinitionNode _zsetRangeByScoreOrder =
+            new DictionaryTableDefinitionNode(new[]
+            {
+                new KeyValuePair<ExpressionNode, ExpressionNode>((ConstantValueNode) 0,
+                    (ConstantValueNode) "ZRANGEBYSCORE"),
+                new KeyValuePair<ExpressionNode, ExpressionNode>((ConstantValueNode) 1,
+                    (ConstantValueNode) "ZREVRANGEBYSCORE")
+            });
+
+        private static readonly DictionaryTableDefinitionNode _zSetCombineDict = new DictionaryTableDefinitionNode(new[]
+        {
+            new KeyValuePair<ExpressionNode, ExpressionNode>((ConstantValueNode) 0,
+                (ConstantValueNode) "ZUNIONSTORE"),
+            new KeyValuePair<ExpressionNode, ExpressionNode>((ConstantValueNode) 1,
+                (ConstantValueNode) "ZINTERSTORE")
+        });
+
+        private static readonly DictionaryTableDefinitionNode _zsetStartExclusive = new DictionaryTableDefinitionNode(
+            new[]
+            {
+                new KeyValuePair<ExpressionNode, ExpressionNode>((ConstantValueNode) 0, ExpressionNode.Empty),
+                new KeyValuePair<ExpressionNode, ExpressionNode>((ConstantValueNode) 1, (ConstantValueNode) "("),
+                new KeyValuePair<ExpressionNode, ExpressionNode>((ConstantValueNode) 2, ExpressionNode.Empty),
+                new KeyValuePair<ExpressionNode, ExpressionNode>((ConstantValueNode) 3, (ConstantValueNode) "("),
+            });
+
+        private static readonly DictionaryTableDefinitionNode _zsetEndExclusive = new DictionaryTableDefinitionNode(
+            new[]
+            {
+                new KeyValuePair<ExpressionNode, ExpressionNode>((ConstantValueNode) 0, ExpressionNode.Empty),
+                new KeyValuePair<ExpressionNode, ExpressionNode>((ConstantValueNode) 1, ExpressionNode.Empty),
+                new KeyValuePair<ExpressionNode, ExpressionNode>((ConstantValueNode) 2, (ConstantValueNode) "("),
+                new KeyValuePair<ExpressionNode, ExpressionNode>((ConstantValueNode) 3, (ConstantValueNode) "("),
+            });
+
+        private static readonly DictionaryTableDefinitionNode _zsetStartLexExclusive =
+            new DictionaryTableDefinitionNode(new[]
+            {
+                new KeyValuePair<ExpressionNode, ExpressionNode>((ConstantValueNode) 0, (ConstantValueNode) "["),
+                new KeyValuePair<ExpressionNode, ExpressionNode>((ConstantValueNode) 1, (ConstantValueNode) "("),
+                new KeyValuePair<ExpressionNode, ExpressionNode>((ConstantValueNode) 2, (ConstantValueNode) "["),
+                new KeyValuePair<ExpressionNode, ExpressionNode>((ConstantValueNode) 3, (ConstantValueNode) "("),
+            });
+
+        private static readonly DictionaryTableDefinitionNode _zsetEndLexExclusive = new DictionaryTableDefinitionNode(
+            new[]
+            {
+                new KeyValuePair<ExpressionNode, ExpressionNode>((ConstantValueNode) 0, (ConstantValueNode) "["),
+                new KeyValuePair<ExpressionNode, ExpressionNode>((ConstantValueNode) 1, (ConstantValueNode) "["),
+                new KeyValuePair<ExpressionNode, ExpressionNode>((ConstantValueNode) 2, (ConstantValueNode) "("),
+                new KeyValuePair<ExpressionNode, ExpressionNode>((ConstantValueNode) 3, (ConstantValueNode) "("),
+            });
+        
+        #endregion
+        
         abstract class RedisMethodResolver : RedILMethodResolver
         {
             private static ExpressionNode[] _empty = new ExpressionNode[0];
 
             protected ExpressionNode FormatStringArgument(ExpressionNode arg) => arg.AsString();
             
-            protected IEnumerable<ExpressionNode> EvaluateArray(ExpressionNode node)
+            protected IEnumerable<ExpressionNode> EvaluateArray(ExpressionNode node, bool allKeys)
             {
                 if (node is null)
                 {
@@ -31,16 +96,30 @@ namespace RediSharp.RedIL.Resolving.Types
                 {
                     if (node.Type == RedILNodeType.ArrayTableDefinition)
                     {
-                        return (node as ArrayTableDefinitionNode).Elements.Select(FormatStringArgument);
+                        var res = (node as ArrayTableDefinitionNode).Elements;
+                        if (!allKeys)
+                        {
+                            return res.Select(FormatStringArgument);
+                        }
+
+                        return res;
                     }
                     else
                     {
-                        return WrapSingle(new CallLuaFunctionNode(LuaFunction.TableUnpack, DataValueType.Array,
-                            WrapSingle(node)));
+                        if (!allKeys)
+                        {
+                            return WrapSingle(new CallLuaFunctionNode(LuaFunction.TableUnpack, DataValueType.Array,
+                                WrapSingle(node)));
+                        }
+                        else
+                        {
+                            return WrapSingle(new CallBuiltinLuaMethodNode(LuaBuiltinMethod.TableUnpack,
+                                WrapSingle(node)));
+                        }
                     }
                 }
 
-                return WrapSingle(node);
+                return WrapSingle(allKeys ? node : FormatStringArgument(node));
             }
 
             protected IEnumerable<ExpressionNode> EvaluateKVArray(ExpressionNode node)
@@ -66,7 +145,22 @@ namespace RediSharp.RedIL.Resolving.Types
                     }
                 }
 
-                return WrapSingle(node);
+                return WrapSingle(FormatStringArgument(node));
+            }
+
+            protected ExpressionNode ArrayLength(ExpressionNode node)
+            {
+                if (node is null)
+                {
+                    return (ConstantValueNode) 0;
+                }
+
+                if (node.Type == RedILNodeType.ArrayTableDefinition)
+                {
+                    return (ConstantValueNode) ((ArrayTableDefinitionNode) node).Elements.Count;
+                }
+
+                return new CallBuiltinLuaMethodNode(LuaBuiltinMethod.TableGetN, new[] {node});
             }
             
             protected ExpressionNode[] WrapSingle(ExpressionNode node) => new ExpressionNode[] {node};
@@ -78,16 +172,33 @@ namespace RediSharp.RedIL.Resolving.Types
 
             private DataValueType _dataType;
 
-            public SimpleRedisMethodResolver(object arg1, object arg2)
+            private bool _allKeys;
+
+            private int? _numArgs;
+
+            public SimpleRedisMethodResolver(object arg1, object arg2, object arg3)
             {
                 _name = (string) arg1;
                 _dataType = (DataValueType) arg2;
+                _allKeys = (bool) arg3;
             }
-            
+
+            public SimpleRedisMethodResolver(object arg1, object arg2, object arg3, object arg4)
+                : this(arg1, arg2, arg3)
+            {
+                _numArgs = (int) arg4;
+            }
+
             public override RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
             {
+                IEnumerable<ExpressionNode> args = arguments;
+                if (_numArgs.HasValue)
+                {
+                    args = args.Take(_numArgs.Value);
+                }
+
                 return new CallRedisMethodNode(_name, _dataType, caller,
-                    arguments.SelectMany(EvaluateArray).ToList());
+                    args.SelectMany(arg => EvaluateArray(arg, _allKeys)).ToList());
             }
         }
 
@@ -138,19 +249,470 @@ namespace RediSharp.RedIL.Resolving.Types
             }
         }
 
+        class IncrByResolver : RedisMethodResolver
+        {
+            private bool _isFloat;
+
+            private bool _isNegative;
+            
+            public IncrByResolver(object arg1, object arg2)
+            {
+                _isFloat = (bool) arg1;
+                _isNegative = (bool) arg2;
+            }
+            
+            public override RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
+            {
+                return new CallRedisMethodNode(_isFloat ? "INCRBYFLOAT" : "INCRBY", DataValueType.Float, caller,
+                    new[]
+                    {
+                        arguments.At(0),
+                        _isNegative
+                            ? UnaryExpressionNode.Create(UnaryExpressionOperator.Minus, arguments.At(1))
+                            : arguments.At(1)
+                    });
+            }
+        }
+
+        class HashIncrByResolver : RedisMethodResolver
+        {
+            private bool _isFloat;
+
+            private bool _isNegative;
+
+            public HashIncrByResolver(object arg1, object arg2)
+            {
+                _isFloat = (bool) arg1;
+                _isNegative = (bool) arg2;
+            }
+            
+            public override RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
+            {
+                return new CallRedisMethodNode(_isFloat ? "HINCRBYFLOAT" : "HINCRBY", DataValueType.Float, caller,
+                    new[]
+                    {
+                        arguments.At(0), arguments.At(1).AsString(),
+                        _isNegative
+                            ? UnaryExpressionNode.Create(UnaryExpressionOperator.Minus, arguments.At(2))
+                            : arguments.At(2)
+                    });
+            }
+        }
+
+        class ListSinglePushResolver : RedisMethodResolver
+        {
+            private string _pushCmd;
+
+            private string _pushxCmd;
+            
+            public ListSinglePushResolver(object arg)
+            {
+                int leftOrRight = (int) arg;
+                if (leftOrRight == 0)
+                {
+                    _pushCmd = "RPUSH";
+                    _pushxCmd = "RPUSHX";
+                }
+                else
+                {
+                    _pushCmd = "LPUSH";
+                    _pushxCmd = "LPUSHX";
+                }
+            }
+            
+            public override RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
+            {
+                return context.Compiler.IfTable(context, DataValueType.Integer, new[]
+                {
+                    new KeyValuePair<ExpressionNode, ExpressionNode>(arguments.At(2) != (ConstantValueNode) "XX",
+                        new CallRedisMethodNode(_pushCmd, DataValueType.Integer, caller,
+                            new[] {arguments.At(0), arguments.At(1).AsString()})),
+                    new KeyValuePair<ExpressionNode, ExpressionNode>(arguments.At(2) == (ConstantValueNode) "XX",
+                        new CallRedisMethodNode(_pushxCmd, DataValueType.Integer, caller,
+                            new[] {arguments.At(0), arguments.At(1).AsString()})),
+                });
+            }
+        }
+
+        class ListRemoveResolver : RedisMethodResolver
+        {
+            public override RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
+            {
+                return new CallRedisMethodNode("LREM", DataValueType.Integer, caller,
+                    new[] {arguments.At(0), arguments.At(2), arguments.At(1).AsString()});
+            }
+        }
+        
+        class ListInsertResolver : RedisMethodResolver
+        {
+            private string _beforeAfter;
+            
+            public ListInsertResolver(object arg)
+            {
+                _beforeAfter = (string) arg;
+            }
+            
+            public override RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
+            {
+                return new CallRedisMethodNode("LINSERT", DataValueType.Integer, caller,
+                    new[]
+                    {
+                        arguments.At(0), (ConstantValueNode) _beforeAfter, arguments.At(1).AsString(),
+                        arguments.At(2).AsString()
+                    });
+            }
+        }
+
+        class HashSetResolver : RedisMethodResolver
+        {
+            public override RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
+            {
+                return context.Compiler.IfTable(context, DataValueType.Boolean, new[]
+                {
+                    new KeyValuePair<ExpressionNode, ExpressionNode>(arguments.At(3) != (ConstantValueNode) "NX",
+                        new CallRedisMethodNode("HSET", DataValueType.Boolean, caller,
+                            new[] {arguments.At(0), arguments.At(1).AsString(), arguments.At(2).AsString()})),
+                    new KeyValuePair<ExpressionNode, ExpressionNode>(arguments.At(3) == (ConstantValueNode) "NX",
+                        new CallRedisMethodNode("HSETNX", DataValueType.Boolean, caller,
+                            new[] {arguments.At(0), arguments.At(1).AsString(), arguments.At(2).AsString()})),
+                });
+            }
+        }
+
+        class HashSetManyResolver : RedisMethodResolver
+        {
+            public override RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
+            {
+                return new CallRedisMethodNode("HMSET", DataValueType.Unknown, caller,
+                    new[] {arguments.At(0)}.Concat(EvaluateKVArray(arguments.At(1))).ToList());
+            }
+        }
+
+        class HashGetAllResolver : RedisMethodResolver
+        {
+            public override RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
+            {
+                return new CallLuaFunctionNode(LuaFunction.TableGroupToKV, DataValueType.Array,
+                    new[] {new CallRedisMethodNode("HGETALL", DataValueType.Array, caller, new[] {arguments.At(0)})});
+            }
+        }
+
+        class SetCombineResolver : RedisMethodResolver
+        {
+            public override RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
+            {
+                var args = arguments.Length == 4
+                    ? new[] {arguments.At(1), arguments.At(2)}
+                    : EvaluateArray(arguments.At(1), true);
+                return context.Compiler.IfTable(context, DataValueType.Array, new[]
+                {
+                    new KeyValuePair<ExpressionNode, ExpressionNode>(arguments.At(0) == (ConstantValueNode) 0,
+                        new CallRedisMethodNode("SUNION", DataValueType.Array, caller, args.ToArray())),
+                    new KeyValuePair<ExpressionNode, ExpressionNode>(arguments.At(0) == (ConstantValueNode) 1,
+                        new CallRedisMethodNode("SINTER", DataValueType.Array, caller, args.ToArray())),
+                    new KeyValuePair<ExpressionNode, ExpressionNode>(arguments.At(0) == (ConstantValueNode) 2,
+                        new CallRedisMethodNode("SDIFF", DataValueType.Array, caller, args.ToArray())),
+                });
+            }
+        }
+
+        class SetCombineAndStoreResolver : RedisMethodResolver
+        {
+            public override RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
+            {
+                var args = arguments.Length == 5
+                    ? new[] {arguments.At(1), arguments.At(2), arguments.At(3)}
+                    : new[] {arguments.At(1)}.Concat(EvaluateArray(arguments.At(2), true));
+                return context.Compiler.IfTable(context, DataValueType.Integer, new[]
+                {
+                    new KeyValuePair<ExpressionNode, ExpressionNode>(arguments.At(0) == (ConstantValueNode) 0,
+                        new CallRedisMethodNode("SUNIONSTORE", DataValueType.Integer, caller, args.ToArray())),
+                    new KeyValuePair<ExpressionNode, ExpressionNode>(arguments.At(0) == (ConstantValueNode) 1,
+                        new CallRedisMethodNode("SINTERSTORE", DataValueType.Integer, caller, args.ToArray())),
+                    new KeyValuePair<ExpressionNode, ExpressionNode>(arguments.At(0) == (ConstantValueNode) 2,
+                        new CallRedisMethodNode("SDIFFSTORE", DataValueType.Integer, caller, args.ToArray())),
+                });
+            }
+        }
+
+        class SortedSetAddResolver : RedisMethodResolver
+        {
+            public override RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
+            {
+                if (arguments.Length == 4)
+                {
+                    return new CallRedisMethodNode("ZADD", DataValueType.Boolean, caller,
+                        new[] {arguments.At(0), arguments.At(2), arguments.At(1).AsString()});
+                }
+                else if (arguments.Length == 5)
+                {
+                    return context.Compiler.IfTable(context, DataValueType.Boolean, new[]
+                    {
+                        new KeyValuePair<ExpressionNode, ExpressionNode>(arguments.At(3) == ExpressionNode.Empty,
+                            new CallRedisMethodNode("ZADD", DataValueType.Boolean, caller,
+                                new[] {arguments.At(0), arguments.At(2), arguments.At(1).AsString()})),
+                        new KeyValuePair<ExpressionNode, ExpressionNode>(arguments.At(3) != ExpressionNode.Empty,
+                            new CallRedisMethodNode("ZADD", DataValueType.Boolean, caller,
+                                new[] {arguments.At(0), arguments.At(3), arguments.At(2), arguments.At(1).AsString()})),
+                    });
+                }
+                
+                throw new NotSupportedException();
+            }
+        }
+
+        class SortedSetAddManyResolver : RedisMethodResolver
+        {
+            public override RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
+            {
+                if (arguments.Length == 3)
+                {
+                    return new CallRedisMethodNode("ZADD", DataValueType.Integer, caller,
+                        new[] {arguments.At(0)}.Concat(EvaluateKVArray(arguments.At(1))).ToArray());
+                }
+                else if (arguments.Length == 4)
+                {
+                    return context.Compiler.IfTable(context, DataValueType.Integer, new[]
+                    {
+                        new KeyValuePair<ExpressionNode, ExpressionNode>(arguments.At(2) == ExpressionNode.Empty,
+                            new CallRedisMethodNode("ZADD", DataValueType.Integer, caller,
+                                new[] {arguments.At(0)}.Concat(EvaluateKVArray(arguments.At(1))).ToArray())),
+                        new KeyValuePair<ExpressionNode, ExpressionNode>(arguments.At(2) != ExpressionNode.Empty,
+                            new CallRedisMethodNode("ZADD", DataValueType.Integer, caller,
+                                new[] {arguments.At(0), arguments.At(2)}.Concat(EvaluateKVArray(arguments.At(1)))
+                                    .ToArray())),
+                    });
+                }
+                
+                throw new NotSupportedException();
+            }
+        }
+
+        class SortedSetCombineAndStoreResolver : RedisMethodResolver
+        {
+            public override RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
+            {
+                //TOOD: Check how to implement DIFFSTORE
+                return new CallRedisMethodNode(
+                    context.Compiler.Dictionary(context, nameof(_zSetCombineDict), _zSetCombineDict, arguments.At(0)), DataValueType.Integer, caller, new[]
+                    {
+                        arguments.At(1), (ConstantValueNode) 2, arguments.At(2), arguments.At(3),
+                        (ConstantValueNode) "AGGREGATE", arguments.At(4)
+                    });
+            }
+        }
+
+        class SortedSetCombineAndStoreManyResolver : RedisMethodResolver
+        {
+            public override RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
+            {
+                return context.Compiler.IfTable(context, DataValueType.Integer, new[]
+                {
+                    new KeyValuePair<ExpressionNode, ExpressionNode>(arguments.At(3) == ExpressionNode.Nil,
+                        new CallRedisMethodNode(
+                            context.Compiler.Dictionary(context, nameof(_zSetCombineDict), _zSetCombineDict,
+                                arguments.At(0)), DataValueType.Integer, caller,
+                            new[] {arguments.At(1), ArrayLength(arguments.At(2))}
+                                .Concat(EvaluateArray(arguments.At(2), true))
+                                .Concat(new[] {(ConstantValueNode) "AGGREGATE", arguments.At(4)})
+                                .ToList())),
+                    new KeyValuePair<ExpressionNode, ExpressionNode>(arguments.At(3) != ExpressionNode.Nil,
+                        new CallRedisMethodNode(
+                            context.Compiler.Dictionary(context, nameof(_zSetCombineDict), _zSetCombineDict,
+                                arguments.At(0)), DataValueType.Integer, caller,
+                            new[] {arguments.At(1), ArrayLength(arguments.At(2))}
+                                .Concat(EvaluateArray(arguments.At(2), true))
+                                .Concat(new[]
+                                    {(ConstantValueNode) "AGGREGATE", arguments.At(4)})
+                                .Concat(new[] {(ConstantValueNode) "WEIGHTS"})
+                                .Concat(EvaluateArray(arguments.At(3), true)).ToList()))
+                });
+            }
+        }
+
+        class SortedSetIncrementResolver : RedisMethodResolver
+        {
+            private bool _positive;
+
+            public SortedSetIncrementResolver(object arg)
+            {
+                _positive = (bool) arg;
+            }
+
+            public override RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
+            {
+                return new CallRedisMethodNode("ZINCRBY", DataValueType.Float, caller,
+                    new[]
+                    {
+                        arguments.At(0),
+                        _positive
+                            ? arguments.At(2)
+                            : UnaryExpressionNode.Create(UnaryExpressionOperator.Minus, arguments.At(2)),
+                        arguments.At(1).AsString()
+                    });
+            }
+        }
+
+        class SortedSetLengthResolver : RedisMethodResolver
+        {
+            public override RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
+            {
+                return context.Compiler.IfTable(context, DataValueType.Integer, new[]
+                {
+                    new KeyValuePair<ExpressionNode, ExpressionNode>(
+                        arguments.At(1) == (ConstantValueNode) "-inf" && arguments.At(2) == (ConstantValueNode) "+inf",
+                        new CallRedisMethodNode("ZCARD", DataValueType.Integer, caller, new[] {arguments.At(0)})),
+                    new KeyValuePair<ExpressionNode, ExpressionNode>(
+                        arguments.At(1) != (ConstantValueNode) "-inf" || arguments.At(2) != (ConstantValueNode) "+inf",
+                        new CallRedisMethodNode("ZCOUNT", DataValueType.Integer, caller, new[]
+                        {
+                            arguments.At(0),
+                            BinaryExpressionNode.Create(BinaryExpressionOperator.StringConcat,
+                                context.Compiler.Dictionary(context, nameof(_zsetStartExclusive), _zsetStartExclusive,
+                                    arguments.At(3)), arguments.At(1)),
+                            BinaryExpressionNode.Create(BinaryExpressionOperator.StringConcat,
+                                context.Compiler.Dictionary(context, nameof(_zsetEndExclusive), _zsetEndExclusive,
+                                    arguments.At(3)), arguments.At(2))
+                        }))
+                });
+            }
+        }
+
+        class SortedSetLengthByValueResolver : RedisMethodResolver
+        {
+            public override RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
+            {
+                return context.Compiler.IfTable(context, DataValueType.Integer, new[]
+                {
+                    new KeyValuePair<ExpressionNode, ExpressionNode>(
+                        arguments.At(1) == (ConstantValueNode) "-" && arguments.At(2) == (ConstantValueNode) "+",
+                        new CallRedisMethodNode("ZLEXCOUNT", DataValueType.Integer, caller,
+                            new[] {arguments.At(0), (ConstantValueNode) "-", (ConstantValueNode) "+"})),
+                    new KeyValuePair<ExpressionNode, ExpressionNode>(
+                        arguments.At(1) == (ConstantValueNode) "-" && arguments.At(2) != (ConstantValueNode) "+",
+                        new CallRedisMethodNode("ZLEXCOUNT", DataValueType.Integer, caller,
+                            new[]
+                            {
+                                arguments.At(0), (ConstantValueNode) "-",
+                                BinaryExpressionNode.Create(BinaryExpressionOperator.StringConcat,
+                                    context.Compiler.Dictionary(context, nameof(_zsetEndLexExclusive),
+                                        _zsetEndLexExclusive, arguments.At(3)), arguments.At(2).AsString())
+                            })),
+                    new KeyValuePair<ExpressionNode, ExpressionNode>(
+                        arguments.At(1) != (ConstantValueNode) "-" && arguments.At(2) == (ConstantValueNode) "+",
+                        new CallRedisMethodNode("ZLEXCOUNT", DataValueType.Integer, caller,
+                            new[]
+                            {
+                                arguments.At(0),
+                                BinaryExpressionNode.Create(BinaryExpressionOperator.StringConcat,
+                                    context.Compiler.Dictionary(context, nameof(_zsetStartLexExclusive),
+                                        _zsetStartLexExclusive, arguments.At(3)), arguments.At(1).AsString()),
+                                (ConstantValueNode) "+"
+                            })),
+                    new KeyValuePair<ExpressionNode, ExpressionNode>(
+                        arguments.At(1) != (ConstantValueNode) "-" && arguments.At(2) != (ConstantValueNode) "+",
+                        new CallRedisMethodNode("ZLEXCOUNT", DataValueType.Integer, caller,
+                            new[]
+                            {
+                                arguments.At(0),
+                                BinaryExpressionNode.Create(BinaryExpressionOperator.StringConcat,
+                                    context.Compiler.Dictionary(context, nameof(_zsetStartLexExclusive),
+                                        _zsetStartLexExclusive, arguments.At(3)), arguments.At(1).AsString()),
+                                BinaryExpressionNode.Create(BinaryExpressionOperator.StringConcat,
+                                    context.Compiler.Dictionary(context, nameof(_zsetEndLexExclusive),
+                                        _zsetEndLexExclusive, arguments.At(3)), arguments.At(2).AsString())
+                            }))
+                });
+            }
+        }
+
+        class SortedSetRangeByRankResolver : RedisMethodResolver
+        {
+            private bool _withScores;
+
+            public SortedSetRangeByRankResolver(object arg)
+            {
+                _withScores = (bool) arg;
+            }
+            
+            public override RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
+            {
+                var args = new List<ExpressionNode>() {arguments.At(0), arguments.At(1), arguments.At(2)};
+                if (_withScores)
+                {
+                    args.Add((ConstantValueNode) "WITHSCORES");
+                }
+
+                var callRedis = new CallRedisMethodNode(
+                    context.Compiler.Dictionary(context, nameof(_zsetRangeByRankOrder), _zsetRangeByRankOrder,
+                        arguments.At(3)), DataValueType.Array, caller, args);
+
+                if (_withScores)
+                {
+                    return new CallLuaFunctionNode(LuaFunction.TableGroupToKVReverse, DataValueType.Array,
+                        new[] {callRedis});
+                }
+
+                return callRedis;
+            }
+        }
+
+        class SortedSetRangeByScoreResolver : RedisMethodResolver
+        {
+            private bool _withScores;
+
+            public SortedSetRangeByScoreResolver(object arg)
+            {
+                _withScores = (bool) arg;
+            }
+            
+            public override RedILNode Resolve(Context context, ExpressionNode caller, ExpressionNode[] arguments)
+            {
+                var args = new List<ExpressionNode>()
+                {
+                    arguments.At(0),
+                    BinaryExpressionNode.Create(BinaryExpressionOperator.StringConcat,
+                        context.Compiler.Dictionary(context, nameof(_zsetStartExclusive), _zsetStartExclusive,
+                            arguments.At(3)), arguments.At(1)),
+                    BinaryExpressionNode.Create(BinaryExpressionOperator.StringConcat,
+                        context.Compiler.Dictionary(context, nameof(_zsetEndExclusive), _zsetEndExclusive,
+                            arguments.At(3)), arguments.At(2))
+                };
+                if (_withScores)
+                {
+                    args.Add((ConstantValueNode) "WITHSCORES");
+                }
+                args.Add((ConstantValueNode)"LIMIT");
+                args.Add(arguments.At(5));
+                args.Add(arguments.At(6));
+
+                var callRedis = new CallRedisMethodNode(
+                    context.Compiler.Dictionary(context, nameof(_zsetRangeByScoreOrder), _zsetRangeByScoreOrder,
+                        arguments.At(4)), DataValueType.Array, caller, args);
+
+                if (_withScores)
+                {
+                    return new CallLuaFunctionNode(LuaFunction.TableGroupToKVReverse, DataValueType.Array,
+                        new[] {callRedis});
+                }
+                
+                return callRedis;
+            }
+        }
+
         class DatabaseProxy : IDatabase
         {
             #region Strings
             
             //GET key
-            [RedILResolve(typeof(SimpleRedisMethodResolver), "GET", DataValueType.String)]
+            [RedILResolve(typeof(SimpleRedisMethodResolver), "GET", DataValueType.String, true, 1)]
             public RedisValue StringGet(RedisKey key, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
 
             //MGET key1 key2 ...
-            [RedILResolve(typeof(SimpleRedisMethodResolver), "MGET", DataValueType.Array)]
+            [RedILResolve(typeof(SimpleRedisMethodResolver), "MGET", DataValueType.Array, true, 1)]
             public RedisValue[] StringGet(RedisKey[] keys, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
@@ -171,48 +733,56 @@ namespace RediSharp.RedIL.Resolving.Types
             }
             
             //INCRBY key val
+            [RedILResolve(typeof(IncrByResolver), false, false)]
             public long StringIncrement(RedisKey key, long value = 1, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
 
             //INCRBYFLOAT key val
+            [RedILResolve(typeof(IncrByResolver), true, false)]
             public double StringIncrement(RedisKey key, double value, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
 
             //STRLEN key
+            [RedILResolve(typeof(SimpleRedisMethodResolver), "STRLEN", DataValueType.Integer, true, 1)]
             public long StringLength(RedisKey key, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
             
             //GETSET key value
+            [RedILResolve(typeof(SimpleRedisMethodResolver), "GETSET", DataValueType.String, false, 2)]
             public RedisValue StringGetSet(RedisKey key, RedisValue value, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
 
             //SETRANGE key offset value
+            [RedILResolve(typeof(SimpleRedisMethodResolver), "SETRANGE", DataValueType.Integer, false, 3)]
             public RedisValue StringSetRange(RedisKey key, long offset, RedisValue value, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
 
             //GETRANGE key start end
+            [RedILResolve(typeof(SimpleRedisMethodResolver), "GETRANGE", DataValueType.String, false, 3)]
             public RedisValue StringGetRange(RedisKey key, long start, long end, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
             
             //INCRBY key -value
+            [RedILResolve(typeof(IncrByResolver), false, true)]
             public long StringDecrement(RedisKey key, long value = 1, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
 
             //INCRBYFLOAT key -value
+            [RedILResolve(typeof(IncrByResolver), true, true)]
             public double StringDecrement(RedisKey key, double value, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
@@ -223,90 +793,105 @@ namespace RediSharp.RedIL.Resolving.Types
             #region Lists
             
             //LTRIM key start stop
+            [RedILResolve(typeof(SimpleRedisMethodResolver), "LTRIM", DataValueType.Unknown, false, 3)]
             public void ListTrim(RedisKey key, long start, long stop, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
             
             //LSET key index value
+            [RedILResolve(typeof(SimpleRedisMethodResolver), "LSET", DataValueType.Unknown, false, 3)]
             public void ListSetByIndex(RedisKey key, long index, RedisValue value, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
             
             //RPUSH key value
+            [RedILResolve(typeof(ListSinglePushResolver), 0)]
             public long ListRightPush(RedisKey key, RedisValue value, When when = When.Always, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
 
             //RPUSH key value1 value2 ...
+            [RedILResolve(typeof(SimpleRedisMethodResolver), "RPUSH", DataValueType.Integer, false, 2)]
             public long ListRightPush(RedisKey key, RedisValue[] values, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
             
             //RPOPLPUSH source dest
+            [RedILResolve(typeof(SimpleRedisMethodResolver), "RPOPLPUSH", DataValueType.String, true, 2)]
             public RedisValue ListRightPopLeftPush(RedisKey source, RedisKey destination, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
             
             //RPOP key
+            [RedILResolve(typeof(SimpleRedisMethodResolver), "RPOP", DataValueType.String, true, 1)]
             public RedisValue ListRightPop(RedisKey key, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
             
             //LREM key count value
+            [RedILResolve(typeof(ListRemoveResolver))]
             public long ListRemove(RedisKey key, RedisValue value, long count = 0, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
             
             //LRANGE key start stop
+            [RedILResolve(typeof(SimpleRedisMethodResolver), "LRANGE", DataValueType.Array, false, 3)]
             public RedisValue[] ListRange(RedisKey key, long start = 0, long stop = -1, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
             
             //LLEN key
+            [RedILResolve(typeof(SimpleRedisMethodResolver), "LLEN", DataValueType.Integer, true, 1)]
             public long ListLength(RedisKey key, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
             
             //LPOP key
+            [RedILResolve(typeof(SimpleRedisMethodResolver), "LPOP", DataValueType.String, true, 1)]
             public RedisValue ListLeftPop(RedisKey key, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
 
             //LPUSH key value
+            [RedILResolve(typeof(ListSinglePushResolver), 1)]
             public long ListLeftPush(RedisKey key, RedisValue value, When when = When.Always, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
 
             //LPUSH key value1 value2 ...
+            [RedILResolve(typeof(SimpleRedisMethodResolver), "LPUSH", DataValueType.Integer, false, 2)]
             public long ListLeftPush(RedisKey key, RedisValue[] values, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
             
             //LINSERT key AFTER pivot value
+            [RedILResolve(typeof(ListInsertResolver), "AFTER")]
             public long ListInsertAfter(RedisKey key, RedisValue pivot, RedisValue value, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
 
             //LINSERT key BEFORE pivot value
+            [RedILResolve(typeof(ListInsertResolver), "BEFORE")]
             public long ListInsertBefore(RedisKey key, RedisValue pivot, RedisValue value, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
             
             //LINDEX key index
+            [RedILResolve(typeof(SimpleRedisMethodResolver), "LINDEX", DataValueType.String, false, 2)]
             public RedisValue ListGetByIndex(RedisKey key, long index, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
@@ -317,94 +902,373 @@ namespace RediSharp.RedIL.Resolving.Types
             #region Hash
             
             //HVALS key
+            [RedILResolve(typeof(SimpleRedisMethodResolver), "HVALS", DataValueType.Array, true, 1)]
             public RedisValue[] HashValues(RedisKey key, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
             
             //HSET key hashField value
+            [RedILResolve(typeof(HashSetResolver))]
             public bool HashSet(RedisKey key, RedisValue hashField, RedisValue value, When when = When.Always, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
             
             //HSET key field1 val1 field2 val2 ...
+            [RedILResolve(typeof(HashSetManyResolver))]
             public void HashSet(RedisKey key, HashEntry[] hashFields, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
             
             //HLEN key
+            [RedILResolve(typeof(SimpleRedisMethodResolver), "HLEN", DataValueType.Integer, true, 1)]
             public long HashLength(RedisKey key, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
             
             //HKEYS key
+            [RedILResolve(typeof(SimpleRedisMethodResolver), "HKEYS", DataValueType.Array, true, 1)]
             public RedisValue[] HashKeys(RedisKey key, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
             
             //HINCRBY key hashField value
+            [RedILResolve(typeof(HashIncrByResolver), false, false)]
             public long HashIncrement(RedisKey key, RedisValue hashField, long value = 1, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
 
             //HINCRBYFLOAT key hashField value
+            [RedILResolve(typeof(HashIncrByResolver), true, false)]
             public double HashIncrement(RedisKey key, RedisValue hashField, double value, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
             
             //HGETALL key
+            [RedILResolve(typeof(HashGetAllResolver))]
             public HashEntry[] HashGetAll(RedisKey key, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
             
             //HMGET key hashField1 hashField2 ...
+            [RedILResolve(typeof(SimpleRedisMethodResolver), "HMGET", DataValueType.Array, false, 2)]
             public RedisValue[] HashGet(RedisKey key, RedisValue[] hashFields, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
             
             //HDEL key hashField
+            [RedILResolve(typeof(SimpleRedisMethodResolver), "HDEL", DataValueType.Boolean, false, 2)]
             public bool HashDelete(RedisKey key, RedisValue hashField, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
 
             //HDEL key hashField1 hashField2 ...
+            [RedILResolve(typeof(SimpleRedisMethodResolver), "HDEL", DataValueType.Integer, false, 2)]
             public long HashDelete(RedisKey key, RedisValue[] hashFields, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
 
             //HEXISTS key hashField
+            [RedILResolve(typeof(SimpleRedisMethodResolver), "HEXISTS", DataValueType.Boolean, false, 2)]
             public bool HashExists(RedisKey key, RedisValue hashField, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
 
             //HGET key hashField
+            [RedILResolve(typeof(SimpleRedisMethodResolver), "HGET", DataValueType.String, false, 2)]
             public RedisValue HashGet(RedisKey key, RedisValue hashField, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
 
             //HINCYBY key hashField value
+            [RedILResolve(typeof(HashIncrByResolver), false, true)]
             public long HashDecrement(RedisKey key, RedisValue hashField, long value = 1, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
 
             //HINCRBYFLOAT key hashField value
+            [RedILResolve(typeof(HashIncrByResolver), true, true)]
             public double HashDecrement(RedisKey key, RedisValue hashField, double value, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }
+            
+            #endregion
+            
+            #region Sets
+            
+            //SADD key value
+            [RedILResolve(typeof(SimpleRedisMethodResolver), "SADD", DataValueType.Boolean, false, 2)]
+            public bool SetAdd(RedisKey key, RedisValue value, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            //SADD key value1 value2 ...
+            [RedILResolve(typeof(SimpleRedisMethodResolver), "SADD", DataValueType.Integer, false, 2)]
+            public long SetAdd(RedisKey key, RedisValue[] values, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            [RedILResolve(typeof(SetCombineResolver))]
+            public RedisValue[] SetCombine(SetOperation operation, RedisKey first, RedisKey second, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            [RedILResolve(typeof(SetCombineResolver))]
+            public RedisValue[] SetCombine(SetOperation operation, RedisKey[] keys, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            [RedILResolve(typeof(SetCombineAndStoreResolver))]
+            public long SetCombineAndStore(SetOperation operation, RedisKey destination, RedisKey first, RedisKey second,
+                CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            [RedILResolve(typeof(SetCombineAndStoreResolver))]
+            public long SetCombineAndStore(SetOperation operation, RedisKey destination, RedisKey[] keys, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            [RedILResolve(typeof(SimpleRedisMethodResolver), "SISMEMBER", DataValueType.Boolean, false, 2)]
+            public bool SetContains(RedisKey key, RedisValue value, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            [RedILResolve(typeof(SimpleRedisMethodResolver), "SCARD", DataValueType.Integer, true, 1)]
+            public long SetLength(RedisKey key, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            [RedILResolve(typeof(SimpleRedisMethodResolver), "SMEMBERS", DataValueType.Array, true, 1)]
+            public RedisValue[] SetMembers(RedisKey key, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            [RedILResolve(typeof(SimpleRedisMethodResolver), "SMOVE", DataValueType.Boolean, false, 3)]
+            public bool SetMove(RedisKey source, RedisKey destination, RedisValue value, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            [RedILResolve(typeof(SimpleRedisMethodResolver), "SPOP", DataValueType.String, true, 1)]
+            public RedisValue SetPop(RedisKey key, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            [RedILResolve(typeof(SimpleRedisMethodResolver), "SPOP", DataValueType.Array, false, 2)]
+            public RedisValue[] SetPop(RedisKey key, long count, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            [RedILResolve(typeof(SimpleRedisMethodResolver), "SRANDMEMBER", DataValueType.String, true, 1)]
+            public RedisValue SetRandomMember(RedisKey key, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            [RedILResolve(typeof(SimpleRedisMethodResolver), "SRANDMEMBER", DataValueType.Array, false, 2)]
+            public RedisValue[] SetRandomMembers(RedisKey key, long count, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            [RedILResolve(typeof(SimpleRedisMethodResolver), "SREM", DataValueType.Boolean, false, 2)]
+            public bool SetRemove(RedisKey key, RedisValue value, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            [RedILResolve(typeof(SimpleRedisMethodResolver), "SREM", DataValueType.Integer, false, 2)]
+            public long SetRemove(RedisKey key, RedisValue[] values, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+            
+            #endregion
+
+            #region Sorted Sets
+
+            [RedILResolve(typeof(SortedSetAddResolver))]
+            public bool SortedSetAdd(RedisKey key, RedisValue member, double score, CommandFlags flags)
+            {
+                throw new NotImplementedException();
+            }
+
+            [RedILResolve(typeof(SortedSetAddResolver))]
+            public bool SortedSetAdd(RedisKey key, RedisValue member, double score, When when = When.Always, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            [RedILResolve(typeof(SortedSetAddManyResolver))]
+            public long SortedSetAdd(RedisKey key, SortedSetEntry[] values, CommandFlags flags)
+            {
+                throw new NotImplementedException();
+            }
+
+            [RedILResolve(typeof(SortedSetAddManyResolver))]
+            public long SortedSetAdd(RedisKey key, SortedSetEntry[] values, When when = When.Always, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            [RedILResolve(typeof(SortedSetCombineAndStoreResolver))]
+            public long SortedSetCombineAndStore(SetOperation operation, RedisKey destination, RedisKey first, RedisKey second,
+                Aggregate aggregate = Aggregate.Sum, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            [RedILResolve(typeof(SortedSetCombineAndStoreManyResolver))]
+            public long SortedSetCombineAndStore(SetOperation operation, RedisKey destination, RedisKey[] keys, double[] weights = null,
+                Aggregate aggregate = Aggregate.Sum, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            [RedILResolve(typeof(SortedSetIncrementResolver), false)]
+            public double SortedSetDecrement(RedisKey key, RedisValue member, double value, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            [RedILResolve(typeof(SortedSetIncrementResolver), true)]
+            public double SortedSetIncrement(RedisKey key, RedisValue member, double value, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            [RedILResolve(typeof(SortedSetLengthResolver))]
+            public long SortedSetLength(RedisKey key, double min = double.NegativeInfinity, double max = double.PositiveInfinity, Exclude exclude = Exclude.None,
+                CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            [RedILResolve(typeof(SortedSetLengthByValueResolver))]
+            public long SortedSetLengthByValue(RedisKey key, RedisValue min, RedisValue max, Exclude exclude = Exclude.None,
+                CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            [RedILResolve(typeof(SortedSetRangeByRankResolver), false)]
+            public RedisValue[] SortedSetRangeByRank(RedisKey key, long start = 0, long stop = -1, Order order = Order.Ascending,
+                CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            [RedILResolve(typeof(SortedSetRangeByRankResolver), true)]
+            public SortedSetEntry[] SortedSetRangeByRankWithScores(RedisKey key, long start = 0, long stop = -1, Order order = Order.Ascending,
+                CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            [RedILResolve(typeof(SortedSetRangeByScoreResolver), false)]
+            public RedisValue[] SortedSetRangeByScore(RedisKey key, double start = double.NegativeInfinity, double stop = double.PositiveInfinity,
+                Exclude exclude = Exclude.None, Order order = Order.Ascending, long skip = 0, long take = -1, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            [RedILResolve(typeof(SortedSetRangeByScoreResolver), true)]
+            public SortedSetEntry[] SortedSetRangeByScoreWithScores(RedisKey key, double start = double.NegativeInfinity, double stop = double.PositiveInfinity,
+                Exclude exclude = Exclude.None, Order order = Order.Ascending, long skip = 0, long take = -1, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            public RedisValue[] SortedSetRangeByValue(RedisKey key, RedisValue min, RedisValue max, Exclude exclude, long skip,
+                long take = -1, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            public RedisValue[] SortedSetRangeByValue(RedisKey key, RedisValue min = new RedisValue(), RedisValue max = new RedisValue(),
+                Exclude exclude = Exclude.None, Order order = Order.Ascending, long skip = 0, long take = -1, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            public long? SortedSetRank(RedisKey key, RedisValue member, Order order = Order.Ascending, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            public bool SortedSetRemove(RedisKey key, RedisValue member, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            public long SortedSetRemove(RedisKey key, RedisValue[] members, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            public long SortedSetRemoveRangeByRank(RedisKey key, long start, long stop, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            public long SortedSetRemoveRangeByScore(RedisKey key, double start, double stop, Exclude exclude = Exclude.None,
+                CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            public long SortedSetRemoveRangeByValue(RedisKey key, RedisValue min, RedisValue max, Exclude exclude = Exclude.None,
+                CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            public double? SortedSetScore(RedisKey key, RedisValue member, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            public SortedSetEntry? SortedSetPop(RedisKey key, Order order = Order.Ascending, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            public SortedSetEntry[] SortedSetPop(RedisKey key, long count, Order order = Order.Ascending, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+
+            #endregion
+         
+            #region Keys
+            
+            
             
             #endregion
             
@@ -1559,86 +2423,7 @@ namespace RediSharp.RedIL.Resolving.Types
                 throw new NotImplementedException();
             }
 
-            public bool SetAdd(RedisKey key, RedisValue value, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public long SetAdd(RedisKey key, RedisValue[] values, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public RedisValue[] SetCombine(SetOperation operation, RedisKey first, RedisKey second, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public RedisValue[] SetCombine(SetOperation operation, RedisKey[] keys, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public long SetCombineAndStore(SetOperation operation, RedisKey destination, RedisKey first, RedisKey second,
-                CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public long SetCombineAndStore(SetOperation operation, RedisKey destination, RedisKey[] keys, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public bool SetContains(RedisKey key, RedisValue value, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public long SetLength(RedisKey key, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public RedisValue[] SetMembers(RedisKey key, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public bool SetMove(RedisKey source, RedisKey destination, RedisValue value, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public RedisValue SetPop(RedisKey key, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public RedisValue[] SetPop(RedisKey key, long count, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public RedisValue SetRandomMember(RedisKey key, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public RedisValue[] SetRandomMembers(RedisKey key, long count, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public bool SetRemove(RedisKey key, RedisValue value, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public long SetRemove(RedisKey key, RedisValue[] values, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
+            
 
             public IEnumerable<RedisValue> SetScan(RedisKey key, RedisValue pattern, int pageSize, CommandFlags flags)
             {
@@ -1663,153 +2448,7 @@ namespace RediSharp.RedIL.Resolving.Types
                 throw new NotImplementedException();
             }
 
-            public bool SortedSetAdd(RedisKey key, RedisValue member, double score, CommandFlags flags)
-            {
-                throw new NotImplementedException();
-            }
-
-            public bool SortedSetAdd(RedisKey key, RedisValue member, double score, When when = When.Always, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public long SortedSetAdd(RedisKey key, SortedSetEntry[] values, CommandFlags flags)
-            {
-                throw new NotImplementedException();
-            }
-
-            public long SortedSetAdd(RedisKey key, SortedSetEntry[] values, When when = When.Always, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public long SortedSetCombineAndStore(SetOperation operation, RedisKey destination, RedisKey first, RedisKey second,
-                Aggregate aggregate = Aggregate.Sum, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public long SortedSetCombineAndStore(SetOperation operation, RedisKey destination, RedisKey[] keys, double[] weights = null,
-                Aggregate aggregate = Aggregate.Sum, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public double SortedSetDecrement(RedisKey key, RedisValue member, double value, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public double SortedSetIncrement(RedisKey key, RedisValue member, double value, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public long SortedSetLength(RedisKey key, double min = double.NegativeInfinity, double max = double.PositiveInfinity, Exclude exclude = Exclude.None,
-                CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public long SortedSetLengthByValue(RedisKey key, RedisValue min, RedisValue max, Exclude exclude = Exclude.None,
-                CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public RedisValue[] SortedSetRangeByRank(RedisKey key, long start = 0, long stop = -1, Order order = Order.Ascending,
-                CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public SortedSetEntry[] SortedSetRangeByRankWithScores(RedisKey key, long start = 0, long stop = -1, Order order = Order.Ascending,
-                CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public RedisValue[] SortedSetRangeByScore(RedisKey key, double start = double.NegativeInfinity, double stop = double.PositiveInfinity,
-                Exclude exclude = Exclude.None, Order order = Order.Ascending, long skip = 0, long take = -1, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public SortedSetEntry[] SortedSetRangeByScoreWithScores(RedisKey key, double start = double.NegativeInfinity, double stop = double.PositiveInfinity,
-                Exclude exclude = Exclude.None, Order order = Order.Ascending, long skip = 0, long take = -1, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public RedisValue[] SortedSetRangeByValue(RedisKey key, RedisValue min, RedisValue max, Exclude exclude, long skip,
-                long take = -1, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public RedisValue[] SortedSetRangeByValue(RedisKey key, RedisValue min = new RedisValue(), RedisValue max = new RedisValue(),
-                Exclude exclude = Exclude.None, Order order = Order.Ascending, long skip = 0, long take = -1, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public long? SortedSetRank(RedisKey key, RedisValue member, Order order = Order.Ascending, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public bool SortedSetRemove(RedisKey key, RedisValue member, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public long SortedSetRemove(RedisKey key, RedisValue[] members, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public long SortedSetRemoveRangeByRank(RedisKey key, long start, long stop, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public long SortedSetRemoveRangeByScore(RedisKey key, double start, double stop, Exclude exclude = Exclude.None,
-                CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public long SortedSetRemoveRangeByValue(RedisKey key, RedisValue min, RedisValue max, Exclude exclude = Exclude.None,
-                CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public IEnumerable<SortedSetEntry> SortedSetScan(RedisKey key, RedisValue pattern, int pageSize, CommandFlags flags)
-            {
-                throw new NotImplementedException();
-            }
-
-            public IEnumerable<SortedSetEntry> SortedSetScan(RedisKey key, RedisValue pattern = new RedisValue(), int pageSize = 10, long cursor = 0,
-                int pageOffset = 0, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public double? SortedSetScore(RedisKey key, RedisValue member, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public SortedSetEntry? SortedSetPop(RedisKey key, Order order = Order.Ascending, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
-
-            public SortedSetEntry[] SortedSetPop(RedisKey key, long count, Order order = Order.Ascending, CommandFlags flags = CommandFlags.None)
-            {
-                throw new NotImplementedException();
-            }
+            
 
             public long StreamAcknowledge(RedisKey key, RedisValue groupName, RedisValue messageId, CommandFlags flags = CommandFlags.None)
             {
@@ -1977,6 +2616,19 @@ namespace RediSharp.RedIL.Resolving.Types
             }
 
             public RedisValueWithExpiry StringGetWithExpiry(RedisKey key, CommandFlags flags = CommandFlags.None)
+            {
+                throw new NotImplementedException();
+            }
+            
+            
+            
+            public IEnumerable<SortedSetEntry> SortedSetScan(RedisKey key, RedisValue pattern, int pageSize, CommandFlags flags)
+            {
+                throw new NotImplementedException();
+            }
+
+            public IEnumerable<SortedSetEntry> SortedSetScan(RedisKey key, RedisValue pattern = new RedisValue(), int pageSize = 10, long cursor = 0,
+                int pageOffset = 0, CommandFlags flags = CommandFlags.None)
             {
                 throw new NotImplementedException();
             }

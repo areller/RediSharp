@@ -138,7 +138,7 @@ namespace RediSharp.UnitTests.Resolving
             block.Children.Count.Should().Be(2);
             var dec = block.Children.First() as VariableDeclareNode;
             var ret = block.Children.Last() as ReturnNode;
-            ret.Value.Should().BeEquivalentTo(new IdentifierNode(dec.Name, DataValueType.Integer));
+            ret.Value.Should().BeEquivalentTo(new IdentifierNode(dec.Name.ToString(), DataValueType.Integer));
         }
 
         [TestMethod]

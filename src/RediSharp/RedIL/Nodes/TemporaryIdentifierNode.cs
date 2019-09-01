@@ -5,7 +5,7 @@ namespace RediSharp.RedIL.Nodes
 {
     class TemporaryIdentifierNode : ExpressionNode
     {
-        public int Id { get; set; }
+        public string Id { get; set; }
 
         public TemporaryIdentifierNode() 
             : base(RedILNodeType.TemporaryParameter)
@@ -15,10 +15,10 @@ namespace RediSharp.RedIL.Nodes
         public TemporaryIdentifierNode(DataValueType type)
             : base(RedILNodeType.TemporaryParameter, type)
         {
-            Id = Interlocked.Increment(ref _idCount);
+            Id = $"_n_{Interlocked.Increment(ref _idCount).ToString()}";
         }
 
-        public TemporaryIdentifierNode(int id, DataValueType dataType)
+        public TemporaryIdentifierNode(string id, DataValueType dataType)
             : base(RedILNodeType.TemporaryParameter, dataType)
         {
             Id = id;

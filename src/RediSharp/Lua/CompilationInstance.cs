@@ -45,7 +45,9 @@ namespace RediSharp.Lua
             { LuaFunction.TableCount, "local {{func_name}} = function(tbl) local count = 0; for _ in pairs(tbl) do count = count + 1; end return count; end" },
             { LuaFunction.TableClear, "local {{func_name}} = function(tbl) for k, _ in pairs(tbl) do tbl[k] = nil; end end" },
             { LuaFunction.TableDeepUnpack, "local {{func_name}} = function(tbl) local arr = {}; for _, v in ipairs(tbl) do table.insert(arr, v[1]); table.insert(arr, tostring(v[2])); end return unpack(arr); end" },
-            { LuaFunction.TableUnpack, "local {{func_name}} = function(tbl) local arr = {}; for _, v in ipairs(tbl) do table.insert(arr, tostring(v)); end return unpack(arr); end" }
+            { LuaFunction.TableUnpack, "local {{func_name}} = function(tbl) local arr = {}; for _, v in ipairs(tbl) do table.insert(arr, tostring(v)); end return unpack(arr); end" },
+            { LuaFunction.TableGroupToKV, "local {{func_name}} = function(tbl) local arr = {}; for i=0,table.getn(tbl)/2-1 do table.insert(arr, {tbl[2*i+1],tbl[2*i+2]}); end return arr; end" },
+            { LuaFunction.TableGroupToKVReverse, "local {{func_name}} = function(tbl) local arr = {}; for i=0,table.getn(tbl)/2-1 do table.insert(arr, {tbl[2*i+2],tbl[2*i+1]}); end return arr; end" }
         };
         
         #endregion
@@ -60,7 +62,7 @@ namespace RediSharp.Lua
 
             private Dictionary<LuaFunction, string> _functionPointers;
 
-            private Dictionary<int, string> _tempIdentifiers;
+            private Dictionary<string, string> _tempIdentifiers;
 
             public StringBuilder Builder { get; }
 
@@ -86,7 +88,7 @@ namespace RediSharp.Lua
 
                 FunctionDefinitions = new List<string>();
                 _functionPointers = new Dictionary<LuaFunction, string>();
-                _tempIdentifiers = new Dictionary<int, string>();
+                _tempIdentifiers = new Dictionary<string, string>();
             }
 
             public string GetFunctionId(LuaFunction functionName)
@@ -112,7 +114,7 @@ namespace RediSharp.Lua
                 return $"_{idNum}";
             }
 
-            public string GetNewId(int tempId)
+            public string GetNewId(string tempId)
             {
                 if (!_tempIdentifiers.TryGetValue(tempId, out var id))
                 {
@@ -166,6 +168,11 @@ namespace RediSharp.Lua
         {
             public bool VisitRootNode(RootNode node, CompilationState state)
             {
+                foreach (var dec in node.GlobalVariables)
+                {
+                    dec.AcceptVisitor(this, state);
+                    state.NewLine();
+                }
                 return node.Body.AcceptVisitor(this, state);
             }
 
@@ -215,9 +222,8 @@ namespace RediSharp.Lua
             public bool VisitCallRedisMethodNode(CallRedisMethodNode node, CompilationState state)
             {
                 node.Caller.AcceptVisitor(this, state);
-                state.Write(".pcall('");
-                state.Write(node.Method);
-                state.Write("'");
+                state.Write(".pcall(");
+                node.Method.AcceptVisitor(this, state);
                 WriteArguments(state, node.Arguments, false);
                 state.Write(")");
 
@@ -408,20 +414,24 @@ namespace RediSharp.Lua
 
             public bool VisitVariableDeclareNode(VariableDeclareNode node, CompilationState state)
             {
-                if (node.Value.Type == RedILNodeType.TemporaryParameter)
+                state.Write("local ");
+                if (node.Name.Type == RedILNodeType.Constant && node.Name.DataType == DataValueType.String)
                 {
-                    state.Write("local ");
-                    state.Write(ResolveTemporaryIdentifier(state, node.Value as TemporaryIdentifierNode));
+                    state.Write(((ConstantValueNode)node.Name).Value.ToString());
+                }
+                else if (node.Name.Type == RedILNodeType.TemporaryParameter)
+                {
+                    state.Write(ResolveTemporaryIdentifier(state, node.Name as TemporaryIdentifierNode));
                 }
                 else
                 {
-                    state.Write($"local {node.Name}");
+                    throw new LuaCompilationException($"Cannot accept variable declare node with '{node.Name.Type}' name");
+                }
 
-                    if (!(node.Value is null))
-                    {
-                        state.Write(" = ");
-                        node.Value.AcceptVisitor(this, state);
-                    }
+                if (!(node.Value is null))
+                {
+                    state.Write(" = ");
+                    node.Value.AcceptVisitor(this, state);
                 }
 
                 state.Write(";");

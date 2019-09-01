@@ -1,5 +1,7 @@
 # RediSharp
 
+This project is currently under development, stay tuned :)
+
 ![](https://travis-ci.com/areller/RediSharp.svg?branch=master)
 
 RediSharp allows you to write C# code that will execute directly on the Redis server.  
@@ -7,53 +9,72 @@ RediSharp allows you to write C# code that will execute directly on the Redis se
 It does that by [transpiling](https://en.wikipedia.org/wiki/Source-to-source_compiler) the C# code to Lua.
 
 ```C#
-var res = await client.Execute((cursor, argv, keys) =>
+var dict = new Dictionary<string, List<int>>()
 {
-    var count = cursor.Get(keys[0]).AsInt();
-    var toAdd = (int) argv[0];
+    {"abc", new List<int>() {1, 2, 3}},
+    {"cde", new List<int>() {3, 4, 5}}
+};
 
-    for (var i = 0; i < count; i++)
+foreach (var elem in dict)
+{
+    cursor.SetAdd("names", elem.Key);
+    foreach (var num in elem.Value)
     {
-        var key = keys[0] + "_" + i;
-        var currentValue = cursor.Get(key).AsLong() ?? 0;
-        cursor.Set(key, currentValue + toAdd);
+        cursor.SetAdd($"{elem.Key}_nums", num);
     }
+}
 
-    return RedResult.Ok;
-}, new RedisValue[] {5}, new RedisKey[] {"countKey"});
+var union = cursor.SetCombine(SetOperation.Union, new RedisKey[] {"abc_nums", "cde_nums"});
+var ts = TimeSpan.FromSeconds((int?) cursor.StringGet("exp") ?? 5);
+cursor.StringSet("json", Json.Encode(union), ts);
+
+return union;
 ```
 
 ```LUA
-local num = tonumber(redis.call('get', KEYS[1]));
-local num2 = tonumber(ARGV[1]);
-local i = 0;
-while i<num do
-    local key = tostring(KEYS[1].."_")..i;
-    local num3 = (tonumber(redis.call('get', key)) or 0);
-    redis.call('set', key, num3+num2)
-    i = i+1
+local dictionary = {["abc"]={1, 2, 3}, ["cde"]={3, 4, 5}};
+for _1,_2 in pairs(dictionary) do
+ local item = {_1,_2};
+ redis.pcall("SADD", "names", item[1])
+ for _,item2 in ipairs(item[2]) do
+  redis.pcall("SADD", item[1].."_nums", item2)
+ end
 end
-return { ok = 'OK' };
+local array = redis.pcall("SUNION", "abc_nums", "cde_nums");
+local value = 1000*((redis.pcall("GET", "exp") or 5));
+if value==nil then
+ redis.pcall("SET", "json", cjson.encode(array))
+elseif value~=nil then
+ redis.pcall("SET", "json", cjson.encode(array), "PX", value)
+end
+return array;
+
 ```
 
 ## Why?
 
 When we execute Lua scripts from C#, we lose a lot of the advanges that the C# compiler and the IDE offer, such as auto completion, compile-time error checking, debugging, and many more.  
 
-RediSharp aims to mitigate these issues.  
+RediSharp aims to mitigate these issues.
+
+## Supports
+
+* Primitive Types, Arrays, Dictionaries
+* Conditions, Switch Statements, For/While/ForEach loops
+* TimeSpan
+* String Operations (Join, Split, etc...)
+* Math (Not All)
+* Json
+* Redis Commands: Strings, Lists, Hashes, Sets, Sorted Sets (Not All)
 
 ## TODO List
 
-* Add more Redis commands
-* Add ability to create and manipulate lists/dictionaries
+* Add more Redis commands (Complete Sorted Sets support, HyperHyperLog, Streams, etc...)
 * Support more of C#'s syntax
-  * ForEach
-  * Switch/Case
   * Custom methods (?)
   * Custom types (structs) (?)
-* Some refactoring
 * Document
-* Write proper unit tests
+* Write more Tests
 * Add debugging support
 
 
