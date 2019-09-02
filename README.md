@@ -58,7 +58,7 @@ return array;
 
 ## Contributing
 There are currently no exact guidelines/rules for contributing, but it's always welcome :)  
-Feel free to clone the repository, play with it, open issues, submit pull requests or email me at arelle.gm@gmail.com
+Feel free to clone the repository, play with it, open issues, submit pull requests or email me at areller.gm@gmail.com
 
 ## Why?
 
