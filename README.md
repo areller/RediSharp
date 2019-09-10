@@ -107,6 +107,7 @@ See the [Lua](./src/RediSharp/Lua) folder.
 ## Dependencies
 * [ILSpy](https://github.com/icsharpcode/ILSpy) - MIT License
 * [StackExchange.Redis](https://github.com/StackExchange/StackExchange.Redis) - MIT License
+* [Newtonsoft.Json](https://github.com/JamesNK/Newtonsoft.Json) - MIT License
 
 ## Future Plans
 
