@@ -23,7 +23,7 @@ namespace RediSharp.UnitTests.Resolving
         [TestMethod]
         public void ShouldResolveMethodOfExternalInterface()
         {
-            var csharp = _actionDecompiler.Decompile<ICursor, string>((cursor, args, keys) =>
+            var csharp = _actionDecompiler.Decompile<NullCursor, string>((cursor, args, keys) =>
             {
                 ISomeInterface foo = new SomeInterace("abc");
                 return foo.Greeting("def");
@@ -34,7 +34,7 @@ namespace RediSharp.UnitTests.Resolving
         [TestMethod]
         public void ShouldResolveMethodOfExternalClass()
         {
-            var csharp = _actionDecompiler.Decompile<ICursor, string>((cursor, args, keys) =>
+            var csharp = _actionDecompiler.Decompile<NullCursor, string>((cursor, args, keys) =>
             {
                 var foo = new SomeInterace("abc");
                 return foo.Greeting("def");
@@ -45,7 +45,7 @@ namespace RediSharp.UnitTests.Resolving
         [TestMethod]
         public void ShouldResolveStaticMethodOfExternalClass()
         {
-            var csharp = _actionDecompiler.Decompile<ICursor, string>((cursor, args, keys) =>
+            var csharp = _actionDecompiler.Decompile<NullCursor, string>((cursor, args, keys) =>
                 {
                     return SomeInterace.StaticGreeting("def");
                 });
@@ -55,7 +55,7 @@ namespace RediSharp.UnitTests.Resolving
         [TestMethod]
         public void ShouldResolveStaticMemberOfExternalClass()
         {
-            var csharp = _actionDecompiler.Decompile<ICursor, string>((cursor, args, keys) =>
+            var csharp = _actionDecompiler.Decompile<NullCursor, string>((cursor, args, keys) =>
                 {
                     return SomeInterace.SomeKey;
                 });

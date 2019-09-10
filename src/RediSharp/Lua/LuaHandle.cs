@@ -6,7 +6,7 @@ using StackExchange.Redis;
 
 namespace RediSharp.Lua
 {
-    class LuaHandle<TRes> : IHandle<string, TRes>, IDisposable
+    class LuaHandle<TRes> : IHandle<TRes>, IDisposable
     {
         #region Static
         
@@ -29,7 +29,7 @@ namespace RediSharp.Lua
             IsInitialized = false;
         }
 
-        public string Artifact { get; }
+        public object Artifact { get; }
 
         public bool IsInitialized { get; private set; }
 
@@ -44,6 +44,11 @@ namespace RediSharp.Lua
 
         public async Task<TRes> Execute(RedisValue[] args, RedisKey[] keys)
         {
+            if (!IsInitialized)
+            {
+                throw new HandleException("Handle was not initialized");
+            }
+            
             args = args ?? EmptyArgs;
             keys = keys ?? EmptyKeys;
             

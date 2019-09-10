@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
@@ -31,10 +32,10 @@ namespace RediSharp.CSharp
             var file = _callingAssembly.Location;
         }
 
-        public DecompilationResult Decompile<TCursor, TRes>(Func<TCursor, RedisValue[], RedisKey[], TRes> action)
+        public DecompilationResult Decompile<TCursor, TRes>(Function<TCursor, TRes> function)
         {
-            var asm = action.Method.DeclaringType.Assembly;
-            _assemblyResolver.LoadAssembly(action.Method.DeclaringType.Assembly);
+            var asm = function.Method.DeclaringType.Assembly;
+            _assemblyResolver.LoadAssembly(function.Method.DeclaringType.Assembly);
             
             var decompiler = new CSharpDecompiler(asm.Location, _assemblyResolver, new DecompilerSettings()
             {
@@ -42,7 +43,7 @@ namespace RediSharp.CSharp
                 NamedArguments = false
             });
             
-            var token = action.Method.MetadataToken;
+            var token = function.Method.MetadataToken;
             var method = MetadataTokenHelpers.TryAsEntityHandle(token);
 
             var ast = decompiler.Decompile(new List<EntityHandle>()

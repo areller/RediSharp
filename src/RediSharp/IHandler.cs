@@ -6,6 +6,6 @@ namespace RediSharp
 {
     interface IHandler<TArtifact>
     {
-        IHandle<TArtifact, TRes> CreateHandle<TRes>(RootNode redIL);
+        IHandle<TRes> CreateHandle<TRes>(RootNode redIL);
     }
 }

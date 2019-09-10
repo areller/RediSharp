@@ -1,4 +1,5 @@
-﻿using RediSharp.Enums;
+﻿using Newtonsoft.Json;
+using RediSharp.Enums;
  using RediSharp.RedIL.Resolving.Attributes;
  using RediSharp.RedIL.Resolving.CommonResolvers;
  
@@ -9,15 +10,13 @@
          [RedILResolve(typeof(CallLuaBuiltinStaticMethodResolver), LuaBuiltinMethod.JsonEncode)]
          public static string Encode(object obj)
          {
-             //TODO: Use Newtonsoft.Json for debugging
-             return string.Empty;
+             return JsonConvert.SerializeObject(obj);
          }
  
          [RedILResolve(typeof(CallLuaBuiltinStaticMethodResolver), LuaBuiltinMethod.JsonDecode)]
          public static T Decode<T>(string json)
          {
-             //TODO: Use Newtonsoft.Json for debugging
-             return default;
+             return JsonConvert.DeserializeObject<T>(json);
          }
      }
  }

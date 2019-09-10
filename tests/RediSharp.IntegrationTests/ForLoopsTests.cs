@@ -11,16 +11,16 @@ namespace RediSharp.IntegrationTests
     {
         #region Functions
 
-        private bool FunctionA(ICursor cursor, RedisValue[] args, RedisKey[] keys)
+        private bool FunctionA(IDatabase cursor, RedisValue[] args, RedisKey[] keys)
         {
-            var count = (int?) cursor.Get(keys[0]) ?? 0;
+            var count = (int?) cursor.StringGet(keys[0]) ?? 0;
             var toAdd = (int) args[0];
 
             for (int i = 0; i < count; i++)
             {
                 var key = keys[0] + "_" + i;
-                var currentValue = (long?) cursor.Get(key) ?? 0;
-                cursor.Set(key, currentValue + toAdd);
+                var currentValue = (long?) cursor.StringGet(key) ?? 0;
+                cursor.StringSet(key, currentValue + toAdd);
             }
 
             return true;

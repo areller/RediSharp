@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Reflection;
 using RediSharp.CSharp;
 using RediSharp.Lua;
@@ -7,7 +8,7 @@ using StackExchange.Redis;
 
 namespace RediSharp
 {
-    public class Client<TCursor>
+    public class Client<TCursor> where TCursor : class
     {
         private CSharpCompiler _csharpCompiler;
 
@@ -15,6 +16,16 @@ namespace RediSharp
 
         private ActionDecompiler _decompiler;
 
+        /// <summary>
+        /// A cursor implementation that is used during debugging
+        /// </summary>
+        public TCursor DebugInstance;
+        
+        /// <summary>
+        /// A connection instance to a Redis database
+        /// </summary>
+        public IDatabase Database { get; }
+        
         public Client()
             : this(null, Assembly.GetCallingAssembly())
         {
@@ -26,18 +37,46 @@ namespace RediSharp
         }
 
         internal Client(IDatabase db, Assembly assembly)
+            : this(db, assembly, default)
+        {
+        }
+
+        internal Client(IDatabase db, TCursor debugInstance)
+            : this(db, Assembly.GetCallingAssembly(), debugInstance)
+        {
+        }
+
+        internal Client(IDatabase db, Assembly assembly, TCursor debugInstance)
         {
             _csharpCompiler = new CSharpCompiler();
             _luaHandler = new LuaHandler(db);
             _decompiler = new ActionDecompiler(assembly);
+
+            DebugInstance = debugInstance;
+            Database = db;
         }
 
-        public IHandle<string, TRes> GetLuaHandle<TRes>(Func<TCursor, RedisValue[], RedisKey[], TRes> action)
+        /// <summary>
+        /// Accepts a Function delegate and creates a non-initialized handle for executing the function
+        /// </summary>
+        /// <param name="function">A delegate with the function to execute</param>
+        /// <typeparam name="TRes">The return type of the function</typeparam>
+        /// <returns>A non-initialized handle for executing the function</returns>
+        public IHandle<TRes> GetHandle<TRes>(Function<TCursor, TRes> function)
         {
-            var decompilation = _decompiler.Decompile(action);
+            var decompilation = _decompiler.Decompile(function);
             var redIL = _csharpCompiler.Compile(decompilation);
 
-            return _luaHandler.CreateHandle<TRes>(redIL);
+            // We create the Lua handle regardless of whether we in Debug or not
+            // Because we still want to fail/throw if RedIL/Lua compilation has failed
+            var luaHandle = _luaHandler.CreateHandle<TRes>(redIL);
+
+            if (Debugger.IsAttached && !(DebugInstance is null))
+            {
+                return new DebugHandle<TCursor, TRes>(luaHandle, DebugInstance, function);
+            }
+
+            return luaHandle;
         }
     }
 }

@@ -18,13 +18,13 @@ namespace RediSharp.IntegrationTests
 
         public IDatabase Db { get; }
 
-        public Client<ICursor> Client { get; }
+        public Client<IDatabase> Client { get; }
         
         private DbSession(int dbNum, IDatabase db)
         {
             _dbNum = dbNum;
             Db = db;
-            Client = new Client<ICursor>(db);
+            Client = new SEClient(db);
         }
         
         public void Dispose()

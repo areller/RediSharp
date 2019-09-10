@@ -23,7 +23,7 @@ namespace RediSharp.UnitTests.Resolving
         [TestMethod]
         public void ShouldResolveArrayLength()
         {
-            var csharp = _actionDecompiler.Decompile<ICursor, int>((cursor, args, keys) =>
+            var csharp = _actionDecompiler.Decompile<NullCursor, int>((cursor, args, keys) =>
             {
                 var arr = new int[] {1, 2, 3};
                 return arr.Length;

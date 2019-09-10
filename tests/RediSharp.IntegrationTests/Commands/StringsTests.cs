@@ -15,7 +15,7 @@ namespace RediSharp.IntegrationTests.Commands
             using (var sess = await DbSession.Create())
             {
                 await sess.Db.StringSetAsync("hello", "world");
-                var res = await sess.Client.ExecuteP<RedisValue>((cursor, args, keys) => cursor.Get("hello"));
+                var res = await sess.Client.ExecuteP<RedisValue>((cursor, args, keys) => cursor.StringGet("hello"));
                 res.ToString().Should().Be("world");
             }
         }
@@ -26,7 +26,7 @@ namespace RediSharp.IntegrationTests.Commands
             using (var sess = await DbSession.Create())
             {
                 var res = await sess.Client.ExecuteP<bool>((cursor, args, keys) =>
-                    cursor.Set("hello", "world"));
+                    cursor.StringSet("hello", "world"));
                 res.Should().BeTrue();
                 (await sess.Db.StringGetAsync("hello")).Should().Be("world");
             }

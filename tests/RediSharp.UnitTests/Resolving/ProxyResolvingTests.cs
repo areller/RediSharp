@@ -110,7 +110,7 @@ namespace RediSharp.UnitTests.Resolving
         [TestMethod]
         public void ShouldResolveConstructor()
         {
-            var csharp = _actionDecompiler.Decompile<ICursor, bool>((cursor, args, keys) =>
+            var csharp = _actionDecompiler.Decompile<NullCursor, bool>((cursor, args, keys) =>
             {
                 var foo1 = new Foo();
                 var foo2 = new Foo(3);
@@ -128,7 +128,7 @@ namespace RediSharp.UnitTests.Resolving
         [TestMethod]
         public void ShouldResolveMember()
         {
-            var csharp = _actionDecompiler.Decompile<ICursor, int>((cursor, args, keys) =>
+            var csharp = _actionDecompiler.Decompile<NullCursor, int>((cursor, args, keys) =>
             {
                 var foo = new Foo(17);
                 return foo.Number;
@@ -144,7 +144,7 @@ namespace RediSharp.UnitTests.Resolving
         [TestMethod]
         public void ShouldResolveMethod()
         {
-            var csharp = _actionDecompiler.Decompile<ICursor, bool>((cursor, args, keys) =>
+            var csharp = _actionDecompiler.Decompile<NullCursor, bool>((cursor, args, keys) =>
             {
                 var foo = new Foo();
                 foo.SetNumber(10);

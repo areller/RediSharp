@@ -6,10 +6,10 @@ namespace RediSharp.IntegrationTests.Extensions
 {
     public static class ClientExtensions
     {
-        public static async Task<TRes> ExecuteP<TRes>(this Client<ICursor> client, Func<ICursor, RedisValue[], RedisKey[], TRes> action,
+        public static async Task<TRes> ExecuteP<TRes>(this Client<IDatabase> client, Function<IDatabase, TRes> action,
             RedisValue[] arguments = null, RedisKey[] keys = null)
         {
-            var handle = client.GetLuaHandle(action);
+            var handle = client.GetHandle(action);
             await handle.Init();
             
             Console.WriteLine(handle.Artifact);

@@ -6,6 +6,3 @@ using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("RediSharp.UnitTests")]
 [assembly: InternalsVisibleTo("RediSharp.Demo")]
-namespace RediSharp
-{
-}
