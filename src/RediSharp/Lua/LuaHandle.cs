@@ -88,7 +88,7 @@ namespace RediSharp.Lua
             }
             else if (typeof(TRes) == typeof(bool))
             {
-                res = nativeRedisResult.Type == ResultType.SimpleString;
+                res = nativeRedisResult.Type == ResultType.SimpleString || nativeRedisResult.Type == ResultType.Integer && nativeRedisResult.ToString() == "1";
                 //res = (bool) nativeRedisResult;
             }
             else if (typeof(TRes) == typeof(RedisValue))

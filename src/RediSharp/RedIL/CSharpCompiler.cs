@@ -150,17 +150,25 @@ namespace RediSharp.RedIL
 
             public RedILNode VisitCastExpression(CastExpression castExpression)
             {
-                var type = castExpression.Type as PrimitiveType;
-                var resType = type is null ? DataValueType.Unknown : TypeUtilities.GetValueType(type.KnownTypeCode);
-
-                var argument =
-                    CastUtilities.CastRedILNode<ExpressionNode>(castExpression.Expression.AcceptVisitor(this));
-                if (resType == DataValueType.Unknown || argument.Type == RedILNodeType.Nil)
+                RedILNode FromPrimitive(PrimitiveType primitiveType)
                 {
-                    return argument;
+                    var resType = primitiveType is null ? DataValueType.Unknown : TypeUtilities.GetValueType(primitiveType.KnownTypeCode);
+                    var argument =
+                        CastUtilities.CastRedILNode<ExpressionNode>(castExpression.Expression.AcceptVisitor(this));
+                    if (resType == DataValueType.Unknown || argument.Type == RedILNodeType.Nil)
+                    {
+                        return argument;
+                    }
+
+                    return new CastNode(resType, argument);
                 }
 
-                return new CastNode(resType, argument);
+                if (castExpression.Type is ComposedType && ((ComposedType) castExpression.Type).HasNullableSpecifier)
+                {
+                    return FromPrimitive(((ComposedType) castExpression.Type).BaseType as PrimitiveType);
+                }
+
+                return FromPrimitive(castExpression.Type as PrimitiveType);
             }
 
             public RedILNode VisitComment(Comment comment)

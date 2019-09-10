@@ -24,7 +24,7 @@ namespace RediSharp.IntegrationTests
         {
             _dbNum = dbNum;
             Db = db;
-            Client = new SEClient(db);
+            Client = new SEClient(db) {DebuggingEnabled = false};
         }
         
         public void Dispose()

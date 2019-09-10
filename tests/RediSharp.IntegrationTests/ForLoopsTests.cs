@@ -14,6 +14,7 @@ namespace RediSharp.IntegrationTests
         private bool FunctionA(IDatabase cursor, RedisValue[] args, RedisKey[] keys)
         {
             var count = (int?) cursor.StringGet(keys[0]) ?? 0;
+            if (count == 0) return false;
             var toAdd = (int) args[0];
 
             for (int i = 0; i < count; i++)
@@ -34,11 +35,7 @@ namespace RediSharp.IntegrationTests
             using (var sess = await DbSession.Create())
             {
                 var res = await sess.Client.ExecuteP(FunctionA, new RedisValue[] {5}, new RedisKey[] {"someKey"});
-                res.Should().BeTrue();
-                (await sess.Db.StringGetAsync("someKey_0")).Should().Be(5);
-                res = await sess.Client.ExecuteP(FunctionA, new RedisValue[] {5}, new RedisKey[] {"someKey"});
-                res.Should().BeTrue();
-                (await sess.Db.StringGetAsync("someKey_0")).Should().Be(10);
+                res.Should().BeFalse();
             }
         }
 

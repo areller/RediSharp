@@ -10,12 +10,16 @@ namespace RediSharp
 {
     public class Client<TCursor> where TCursor : class
     {
+        #region Private
+        
         private CSharpCompiler _csharpCompiler;
 
         private LuaHandler _luaHandler;
 
         private ActionDecompiler _decompiler;
 
+        #endregion
+        
         /// <summary>
         /// A cursor implementation that is used during debugging
         /// </summary>
@@ -25,6 +29,12 @@ namespace RediSharp
         /// A connection instance to a Redis database
         /// </summary>
         public IDatabase Database { get; }
+        
+        #region Options
+
+        public bool DebuggingEnabled { get; set; }
+
+        #endregion
         
         public Client()
             : this(null, Assembly.GetCallingAssembly())
@@ -71,7 +81,7 @@ namespace RediSharp
             // Because we still want to fail/throw if RedIL/Lua compilation has failed
             var luaHandle = _luaHandler.CreateHandle<TRes>(redIL);
 
-            if (Debugger.IsAttached && !(DebugInstance is null))
+            if (DebuggingEnabled && Debugger.IsAttached && !(DebugInstance is null))
             {
                 return new DebugHandle<TCursor, TRes>(luaHandle, DebugInstance, function);
             }
