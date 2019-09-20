@@ -106,7 +106,7 @@ Lua is written by traversing the RedIL using an [IRedILVisitor](./src/RediSharp/
 See the [Lua](./src/RediSharp/Lua) folder. 
 
 ## Dependencies
-* [ILSpy](https://github.com/icsharpcode/ILSpy) - MIT License
+* [LiveDelegate.ILSpy](https://github.com/areller/LiveDelegate) - MIT License (Uses ILSpy to decompile compiled delegates)
 * [StackExchange.Redis](https://github.com/StackExchange/StackExchange.Redis) - MIT License
 * [Newtonsoft.Json](https://github.com/JamesNK/Newtonsoft.Json) - MIT License
 

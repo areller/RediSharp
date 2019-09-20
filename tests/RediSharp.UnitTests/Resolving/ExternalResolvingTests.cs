@@ -1,6 +1,6 @@
 using System.Reflection;
+using LiveDelegate.ILSpy;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using RediSharp.CSharp;
 using RediSharp.RedIL;
 using RediSharp.RedIL.Nodes;
 
@@ -9,21 +9,21 @@ namespace RediSharp.UnitTests.Resolving
     [TestClass]
     public class ExternalResolvingTests
     {
-        private static ActionDecompiler _actionDecompiler;
+        private static IDelegateReader _delegateReader;
 
         private static CSharpCompiler _csharpCompiler;
 
         [ClassInitialize]
         public static void ClassSetup(TestContext ctx)
         {
-            _actionDecompiler = new ActionDecompiler(Assembly.GetCallingAssembly());
+            _delegateReader = DelegateReader.CreateWithDefaultAssemblyProvider();
             _csharpCompiler = new CSharpCompiler();
         }
 
         [TestMethod]
         public void ShouldResolveMethodOfExternalInterface()
         {
-            var csharp = _actionDecompiler.Decompile<NullCursor, string>((cursor, args, keys) =>
+            var csharp = DecompilationResult.CreateFromDelegate<NullCursor, string>(_delegateReader, (cursor, args, keys) =>
             {
                 ISomeInterface foo = new SomeInterace("abc");
                 return foo.Greeting("def");
@@ -34,7 +34,7 @@ namespace RediSharp.UnitTests.Resolving
         [TestMethod]
         public void ShouldResolveMethodOfExternalClass()
         {
-            var csharp = _actionDecompiler.Decompile<NullCursor, string>((cursor, args, keys) =>
+            var csharp = DecompilationResult.CreateFromDelegate<NullCursor, string>(_delegateReader, (cursor, args, keys) =>
             {
                 var foo = new SomeInterace("abc");
                 return foo.Greeting("def");
@@ -45,7 +45,7 @@ namespace RediSharp.UnitTests.Resolving
         [TestMethod]
         public void ShouldResolveStaticMethodOfExternalClass()
         {
-            var csharp = _actionDecompiler.Decompile<NullCursor, string>((cursor, args, keys) =>
+            var csharp = DecompilationResult.CreateFromDelegate<NullCursor, string>(_delegateReader, (cursor, args, keys) =>
                 {
                     return SomeInterace.StaticGreeting("def");
                 });
@@ -55,7 +55,7 @@ namespace RediSharp.UnitTests.Resolving
         [TestMethod]
         public void ShouldResolveStaticMemberOfExternalClass()
         {
-            var csharp = _actionDecompiler.Decompile<NullCursor, string>((cursor, args, keys) =>
+            var csharp = DecompilationResult.CreateFromDelegate<NullCursor, string>(_delegateReader, (cursor, args, keys) =>
                 {
                     return SomeInterace.SomeKey;
                 });

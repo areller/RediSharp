@@ -8,7 +8,6 @@ using ICSharpCode.Decompiler.CSharp.Syntax;
 using ICSharpCode.Decompiler.CSharp.Syntax.PatternMatching;
 using ICSharpCode.Decompiler.Semantics;
 using ICSharpCode.Decompiler.TypeSystem;
-using RediSharp.CSharp;
 using RediSharp.Enums;
 using RediSharp.RedIL.Enums;
 using RediSharp.RedIL.Extensions;
