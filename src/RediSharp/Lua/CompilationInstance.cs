@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -232,6 +233,7 @@ namespace RediSharp.Lua
 
             public bool VisitCastNode(CastNode node, CompilationState state)
             {
+                var casting = true;
                 switch (node.DataType)
                 {
                     case DataValueType.String:
@@ -241,12 +243,16 @@ namespace RediSharp.Lua
                     case DataValueType.Float:
                         state.Write("tonumber");
                         break;
-                    default: throw new LuaCompilationException($"Unsupported cast to '{node.DataType}'");
+                    case DataValueType.Boolean:
+                        return BooleanCasting(state, node.Argument);
+                    default:
+                        casting = false;
+                        break;
                 }
-                
-                state.Write("(");
+
+                if (casting) state.Write("(");
                 node.Argument.AcceptVisitor(this, state);
-                state.Write(")");
+                if (casting) state.Write(")");
 
                 return true;
             }
@@ -542,6 +548,28 @@ namespace RediSharp.Lua
                 else
                 {
                     throw new LuaCompilationException($"Cannot iterate over '{node.Over.DataType}'");
+                }
+
+                return true;
+            }
+
+            private bool BooleanCasting(CompilationState state, ExpressionNode node)
+            {
+                // Check boolean according to original data type
+                switch (node.DataType)
+                {
+                    case DataValueType.Float:
+                        EncapsulateOrNot(state, node != (ConstantValueNode) 0);
+                        break;
+                    case DataValueType.Integer:
+                        EncapsulateOrNot(state, node == (ConstantValueNode) 1);
+                        break;
+                    case DataValueType.String:
+                        EncapsulateOrNot(state, node == (ConstantValueNode) "1");
+                        break;
+                    default:
+                        node.AcceptVisitor(this, state);
+                        break;
                 }
 
                 return true;

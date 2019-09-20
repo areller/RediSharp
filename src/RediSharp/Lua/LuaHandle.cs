@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using ICSharpCode.Decompiler.CSharp.Syntax;
 using StackExchange.Redis;
 
 namespace RediSharp.Lua
@@ -10,9 +11,8 @@ namespace RediSharp.Lua
     {
         #region Static
         
-        private static readonly RedisKey[] EmptyKeys = new RedisKey[0];
-
-        private static readonly RedisValue[] EmptyArgs = new RedisValue[0];
+        private static readonly RedisKey[] _EmptyKeys = new RedisKey[0];
+        private static readonly RedisValue[] _EmptyArgs = new RedisValue[0];
         
         #endregion
         
@@ -20,11 +20,15 @@ namespace RediSharp.Lua
 
         private string _hash;
 
+        private Func<RedisResult, object> _converter;
+
         public LuaHandle(
             IDatabase db,
-            string script)
+            string script,
+            Func<RedisResult, object> converter)
         {
             _db = db;
+            _converter = converter;
             Artifact = script;
             IsInitialized = false;
         }
@@ -49,8 +53,8 @@ namespace RediSharp.Lua
                 throw new HandleException("Handle was not initialized");
             }
             
-            args = args ?? EmptyArgs;
-            keys = keys ?? EmptyKeys;
+            args = args ?? _EmptyArgs;
+            keys = keys ?? _EmptyKeys;
             
             var result = await _db.ExecuteAsync("EVALSHA",
                 new object[] {_hash, keys.Length}.Concat(keys.Select(k => (object)k)).Concat(args.Select(a => (object)a)).ToArray());
@@ -61,114 +65,7 @@ namespace RediSharp.Lua
 
         private TRes ParseResult<TRes>(RedisResult nativeRedisResult)
         {
-            object res = null;
-            if (typeof(TRes) == typeof(string))
-            {
-                res = (string) nativeRedisResult;
-            }
-            else if (typeof(TRes) == typeof(byte[]))
-            {
-                res = (byte[]) nativeRedisResult;
-            }
-            else if (typeof(TRes) == typeof(double))
-            {
-                res = (double) nativeRedisResult;
-            }
-            else if (typeof(TRes) == typeof(long))
-            {
-                res = (long) nativeRedisResult;
-            }
-            else if (typeof(TRes) == typeof(ulong))
-            {
-                res = (ulong) nativeRedisResult;
-            }
-            else if (typeof(TRes) == typeof(int))
-            {
-                res = (int) nativeRedisResult;
-            }
-            else if (typeof(TRes) == typeof(bool))
-            {
-                res = nativeRedisResult.Type == ResultType.SimpleString || nativeRedisResult.Type == ResultType.Integer && nativeRedisResult.ToString() == "1";
-                //res = (bool) nativeRedisResult;
-            }
-            else if (typeof(TRes) == typeof(RedisValue))
-            {
-                res = (RedisValue) nativeRedisResult;
-            }
-            else if (typeof(TRes) == typeof(RedisKey))
-            {
-                res = (RedisKey) nativeRedisResult;
-            }
-            else if (typeof(TRes) == typeof(double?))
-            {
-                res = (double?) nativeRedisResult;
-            }
-            else if (typeof(TRes) == typeof(long?))
-            {
-                res = (long?) nativeRedisResult;
-            }
-            else if (typeof(TRes) == typeof(ulong?))
-            {
-                res = (ulong?) nativeRedisResult;
-            }
-            else if (typeof(TRes) == typeof(int?))
-            {
-                res = (int?) nativeRedisResult;
-            }
-            else if (typeof(TRes) == typeof(bool?))
-            {
-                res = (bool?) nativeRedisResult;
-            }
-            else if (typeof(TRes) == typeof(string[]))
-            {
-                res = (string[]) nativeRedisResult;
-            }
-            else if (typeof(TRes) == typeof(byte[][]))
-            {
-                res = (byte[][]) nativeRedisResult;
-            }
-            else if (typeof(TRes) == typeof(double[]))
-            {
-                res = (double[]) nativeRedisResult;
-            }
-            else if (typeof(TRes) == typeof(long[]))
-            {
-                res = (long[]) nativeRedisResult;
-            }
-            else if (typeof(TRes) == typeof(ulong[]))
-            {
-                res = (ulong[]) nativeRedisResult;
-            }
-            else if (typeof(TRes) == typeof(int[]))
-            {
-                res = (int[]) nativeRedisResult;
-            }
-            else if (typeof(TRes) == typeof(bool[]))
-            {
-                res = (bool[]) nativeRedisResult;
-            }
-            else if (typeof(TRes) == typeof(RedisValue[]))
-            {
-                res = (RedisValue[]) nativeRedisResult;
-            }
-            //TODO: Handle rest of List<T>, IList<T>, Dictionary<K,V>, IDictionary<K,V> conversions
-            else if (typeof(TRes) == typeof(List<RedisValue>))
-            {
-                res = ((RedisValue[]) nativeRedisResult).ToList();
-            }
-            else if (typeof(TRes) == typeof(RedisKey[]))
-            {
-                res = (RedisKey[]) nativeRedisResult;
-            }
-            else if (typeof(TRes) == typeof(HashEntry[]))
-            {
-                //TODO: Convert to HashEntry[]
-            }
-            else
-            {
-                throw new Exception("Mismatch of type");
-            }
-
+            var res = _converter(nativeRedisResult);
             return (TRes) res;
         }
 
