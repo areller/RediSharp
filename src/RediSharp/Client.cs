@@ -32,7 +32,7 @@ namespace RediSharp
         
         #region Options
 
-        public bool DebuggingEnabled { get; set; }
+        public bool DebuggingEnabled { get; set; } = true;
 
         #endregion
         

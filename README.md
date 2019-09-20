@@ -55,6 +55,7 @@ return array;
 
 ## More Documents
 * [How to Use](./docs/how_to_use.md)
+* [Debugging](./docs/debugging.md)
 
 ## Contributing
 There are currently no exact guidelines/rules for contributing, but it's always welcome :)  
