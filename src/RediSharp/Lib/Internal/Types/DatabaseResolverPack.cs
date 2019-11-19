@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
-using RediSharp.Enums;
+using RediSharp.Lua;
 using RediSharp.RedIL.Enums;
 using RediSharp.RedIL.Extensions;
 using RediSharp.RedIL.Nodes;

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using RediSharp.Enums;
+using RediSharp.Lua;
 using RediSharp.RedIL.Enums;
 using RediSharp.RedIL.Nodes;
 using RediSharp.RedIL.Resolving;

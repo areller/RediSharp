@@ -1,4 +1,4 @@
-namespace RediSharp.Enums
+namespace RediSharp.Lua
 {
     enum LuaBuiltinMethod
     {

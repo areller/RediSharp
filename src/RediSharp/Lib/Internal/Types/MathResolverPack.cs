@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using RediSharp.Enums;
+using RediSharp.Lua;
 using RediSharp.RedIL.Resolving.Attributes;
 using RediSharp.RedIL.Resolving.CommonResolvers;
 

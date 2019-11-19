@@ -1,5 +1,5 @@
 ﻿using Newtonsoft.Json;
-using RediSharp.Enums;
+using RediSharp.Lua;
 using RediSharp.RedIL.Resolving.Attributes;
 using RediSharp.RedIL.Resolving.CommonResolvers;
 
