@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
 using RediSharp.Enums;
- using RediSharp.RedIL.Resolving.Attributes;
- using RediSharp.RedIL.Resolving.CommonResolvers;
+using RediSharp.RedIL.Resolving.Attributes;
+using RediSharp.RedIL.Resolving.CommonResolvers;
 
 namespace RediSharp.Lib
 {
