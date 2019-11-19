@@ -904,6 +904,11 @@ namespace RediSharp.RedIL
 
             #region Unused
 
+            public RedILNode VisitLocalFunctionDeclarationStatement(LocalFunctionDeclarationStatement localFunctionDeclarationStatement)
+            {
+                throw new NotImplementedException();
+            }
+            
             public RedILNode VisitAnonymousMethodExpression(AnonymousMethodExpression anonymousMethodExpression)
             {
                 throw new NotImplementedException();

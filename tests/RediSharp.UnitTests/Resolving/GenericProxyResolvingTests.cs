@@ -1,7 +1,6 @@
 using System.Linq;
 using System.Reflection;
 using FluentAssertions;
-using LiveDelegate.ILSpy;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using RediSharp.RedIL;
 using RediSharp.RedIL.Enums;
@@ -67,14 +66,11 @@ namespace RediSharp.UnitTests.Resolving
         
         #endregion
 
-        private static IDelegateReader _delegateReader;
-
         private static CSharpCompiler _csharpCompiler;
 
         [ClassInitialize]
         public static void ClassSetup(TestContext ctx)
         {
-            _delegateReader = DelegateReader.CreateWithDefaultAssemblyProvider();
             _csharpCompiler = new CSharpCompiler();
             _csharpCompiler.MainResolver.AddResolver(typeof(Foo<>), typeof(FooProxy<>));
         }
@@ -82,7 +78,7 @@ namespace RediSharp.UnitTests.Resolving
         [TestMethod]
         public void ShouldResolveConstructor()
         {
-            var csharp = DecompilationResult.CreateFromDelegate<NullCursor, bool>(_delegateReader, (cursor, args, keys) =>
+            var csharp = DecompilationResult.CreateFromDelegate<NullCursor, bool>((cursor, args, keys) =>
             {
                 var foo = new Foo<double>(3.5);
                 return true;
@@ -97,7 +93,7 @@ namespace RediSharp.UnitTests.Resolving
         [TestMethod]
         public void ShouldResolveMember()
         {
-            var csharp = DecompilationResult.CreateFromDelegate<NullCursor, double>(_delegateReader, (cursor, args, keys) =>
+            var csharp = DecompilationResult.CreateFromDelegate<NullCursor, double>((cursor, args, keys) =>
             {
                 var foo = new Foo<double>(3.5);
                 return foo.Number;
@@ -114,7 +110,7 @@ namespace RediSharp.UnitTests.Resolving
         [TestMethod]
         public void ShouldResolveMethod()
         {
-            var csharp = DecompilationResult.CreateFromDelegate<NullCursor, double>(_delegateReader, (cursor, args, keys) =>
+            var csharp = DecompilationResult.CreateFromDelegate<NullCursor, double>((cursor, args, keys) =>
             {
                 var foo = new Foo<double>(4);
                 return foo.GetNumber();
