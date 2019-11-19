@@ -59,11 +59,11 @@ namespace RediSharp.Lua
             var result = await _db.ExecuteAsync("EVALSHA",
                 new object[] {_hash, keys.Length}.Concat(keys.Select(k => (object)k)).Concat(args.Select(a => (object)a)).ToArray());
             
-            var parsedResult = ParseResult<TRes>(result);
+            var parsedResult = ParseResult(result);
             return parsedResult;
         }
 
-        private TRes ParseResult<TRes>(RedisResult nativeRedisResult)
+        private TRes ParseResult(RedisResult nativeRedisResult)
         {
             var res = _converter(nativeRedisResult);
             return (TRes) res;
