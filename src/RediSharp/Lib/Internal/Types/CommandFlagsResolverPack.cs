@@ -1,15 +1,15 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using RediSharp.RedIL.Enums;
 using RediSharp.RedIL.Resolving.Attributes;
 using StackExchange.Redis;
 
-namespace RediSharp.RedIL.Resolving.Types
+namespace RediSharp.Lib.Internal.Types
 {
-    class RedisKeyResolverPack
+    class CommandFlagsResolverPack
     {
-        [RedILDataType(DataValueType.String)]
-        class RedisKeyProxy
+        [RedILDataType(DataValueType.Integer)]
+        enum CommandFlagsProxy
         {
             
         }
@@ -18,7 +18,7 @@ namespace RediSharp.RedIL.Resolving.Types
         {
             return new Dictionary<Type, Type>()
             {
-                { typeof(RedisKey), typeof(RedisKeyProxy) }
+                {typeof(CommandFlags), typeof(CommandFlagsProxy)}
             };
         }
     }

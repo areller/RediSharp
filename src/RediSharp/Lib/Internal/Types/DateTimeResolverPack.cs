@@ -1,15 +1,14 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using RediSharp.RedIL.Enums;
 using RediSharp.RedIL.Resolving.Attributes;
-using StackExchange.Redis;
 
-namespace RediSharp.RedIL.Resolving.Types
+namespace RediSharp.Lib.Internal.Types
 {
-    class CommandFlagsResolverPack
+    class DateTimeResolverPack
     {
-        [RedILDataType(DataValueType.Integer)]
-        enum CommandFlagsProxy
+        [RedILDataType(DataValueType.Float)]
+        class DateTimeProxy
         {
             
         }
@@ -18,7 +17,7 @@ namespace RediSharp.RedIL.Resolving.Types
         {
             return new Dictionary<Type, Type>()
             {
-                {typeof(CommandFlags), typeof(CommandFlagsProxy)}
+                { typeof(DateTime), typeof(DateTimeProxy) }
             };
         }
     }

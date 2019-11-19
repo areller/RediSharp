@@ -3,47 +3,46 @@ using System.Collections.Generic;
 using RediSharp.RedIL.Enums;
 using RediSharp.RedIL.Extensions;
 using RediSharp.RedIL.Nodes;
+using RediSharp.RedIL.Resolving;
 using RediSharp.RedIL.Resolving.Attributes;
 using RediSharp.RedIL.Resolving.CommonResolvers;
 using StackExchange.Redis;
 
-namespace RediSharp.RedIL.Resolving.Types
+namespace RediSharp.Lib.Internal.Types
 {
-    class SortedSetEntryResolverPack
+    class HashEntryResolverPack
     {
         class ConstructorResolver : RedILObjectResolver
         {
             public override ExpressionNode Resolve(Context context, ExpressionNode[] arguments, ExpressionNode[] elements)
             {
-                return new ArrayTableDefinitionNode(new[] {arguments.At(1), arguments.At(0)});
+                return new ArrayTableDefinitionNode(new ExpressionNode[] {arguments.At(0), arguments.At(1)});
             }
         }
         
         [RedILDataType(DataValueType.KVPair)]
-        class SortedSetEntryProxy
+        class HashEntryProxy
         {
             [RedILResolve(typeof(ConstructorResolver))]
-            public SortedSetEntryProxy(RedisValue element, double score)
-            {}
+            public HashEntryProxy(RedisValue name, RedisValue value)
+            {
+            }
+            
+            [RedILResolve(typeof(TableAccessMemberResolver), DataValueType.Integer, 1)]
+            public RedisValue Name { get; }
 
             [RedILResolve(typeof(TableAccessMemberResolver), DataValueType.Integer, 2)]
-            public RedisValue Element => default;
+            public RedisValue Value { get; }
 
             [RedILResolve(typeof(TableAccessMemberResolver), DataValueType.Integer, 1)]
-            public double Score => default;
-
-            [RedILResolve(typeof(TableAccessMemberResolver), DataValueType.Integer, 1)]
-            public double Value => default;
-
-            [RedILResolve(typeof(TableAccessMemberResolver), DataValueType.Integer, 2)]
-            public RedisValue Key => default;
+            public RedisValue Key { get; }
         }
-
+        
         public static Dictionary<Type, Type> GetMapToProxy()
         {
             return new Dictionary<Type, Type>()
             {
-                {typeof(SortedSetEntry), typeof(SortedSetEntryProxy)}
+                { typeof(HashEntry), typeof(HashEntryProxy) }
             };
         }
     }

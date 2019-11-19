@@ -2,28 +2,30 @@ using System;
 using System.Collections.Generic;
 using RediSharp.RedIL.Enums;
 using RediSharp.RedIL.Nodes;
+using RediSharp.RedIL.Resolving;
 using RediSharp.RedIL.Resolving.Attributes;
 using StackExchange.Redis;
 
-namespace RediSharp.RedIL.Resolving.Types
+namespace RediSharp.Lib.Internal.Types
 {
-    class OrderEnumResolverPack
+    class WhenEnumResolverPack
     {
-        private static readonly Dictionary<Order, int> _map = new Dictionary<Order, int>()
+        private static readonly Dictionary<When, string> _map = new Dictionary<When, string>()
         {
-            {Order.Ascending, 0},
-            {Order.Descending, 1}
+            {When.Always, string.Empty},
+            {When.Exists, "XX"},
+            {When.NotExists, "NX"}
         };
-
+        
         class EnumResolver : RedILMemberResolver
         {
             private ConstantValueNode _res;
 
             public EnumResolver(object arg)
             {
-                _res = (ConstantValueNode) _map[(Order) arg];
+                _res = (ConstantValueNode) _map[(When) arg];
             }
-            
+
             public override ExpressionNode Resolve(Context context, ExpressionNode caller)
             {
                 return _res;
@@ -34,26 +36,28 @@ namespace RediSharp.RedIL.Resolving.Types
         {
             public override ExpressionNode Resolve(Context context, object value)
             {
-                var order = (Order) value;
-                return (ConstantValueNode) _map[order];
+                var when = (When) value;
+                return (ConstantValueNode) _map[when];
             }
         }
-
-        [RedILDataType(DataValueType.Integer)]
+        
+        [RedILDataType(DataValueType.String)]
         [RedILResolve(typeof(EnumValueResolver))]
-        enum OrderProxy
+        enum WhenProxy
         {
-            [RedILResolve(typeof(EnumResolver), Order.Ascending)]
-            Ascending,
-            [RedILResolve(typeof(EnumResolver), Order.Descending)]
-            Descending
+            [RedILResolve(typeof(EnumResolver), When.Always)]
+            Always,
+            [RedILResolve(typeof(EnumResolver), When.Exists)]
+            Exists,
+            [RedILResolve(typeof(EnumResolver), When.NotExists)]
+            NotExists
         }
-
+        
         public static Dictionary<Type, Type> GetMapToProxy()
         {
             return new Dictionary<Type, Type>()
             {
-                {typeof(Order), typeof(OrderProxy)}
+                {typeof(When), typeof(WhenProxy)}
             };
         }
     }

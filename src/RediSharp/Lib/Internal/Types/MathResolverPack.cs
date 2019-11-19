@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO.Compression;
 using RediSharp.Enums;
 using RediSharp.RedIL.Resolving.Attributes;
 using RediSharp.RedIL.Resolving.CommonResolvers;
 
-namespace RediSharp.RedIL.Resolving.Types
+namespace RediSharp.Lib.Internal.Types
 {
     class MathResolverPack
     {
