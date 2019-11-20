@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using ICSharpCode.Decompiler.TypeSystem;
+using RediSharp.Lib.Internal.Types;
 using RediSharp.RedIL.Enums;
 using RediSharp.RedIL.Nodes;
 using RediSharp.RedIL.Resolving.Attributes;
-using RediSharp.RedIL.Resolving.Types;
 using StackExchange.Redis;
 
 namespace RediSharp.RedIL.Resolving

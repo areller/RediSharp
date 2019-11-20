@@ -9,7 +9,7 @@ using System.Runtime.ExceptionServices;
 using System.Security;
 using System.Text;
 using System.Threading.Tasks;
-using LiveDelegate.ILSpy;
+using RediSharp.Decompilation;
 using StackExchange.Redis;
 
 namespace RediSharp.IntegrationTests.Extensions
@@ -17,7 +17,6 @@ namespace RediSharp.IntegrationTests.Extensions
     public static class ClientExtensions
     {
         private static object _globalSync = new object();
-        private static IDelegateReader _reader = DelegateReader.CreateWithDefaultAssemblyProvider();
         
         public static async Task<TRes> ExecuteP<TRes>(this Client<IDatabase> client, Function<IDatabase, TRes> action,
             RedisValue[] arguments = null, RedisKey[] keys = null)
@@ -30,13 +29,13 @@ namespace RediSharp.IntegrationTests.Extensions
                 lock (_globalSync)
                 {
                     Console.WriteLine("=========================== START");
-                    Console.WriteLine(_reader.Read(action));
+                    Console.WriteLine(DelegateReader.Read(action));
                     Console.WriteLine("===========================");
                     Console.WriteLine(handle.Artifact);
                     Console.WriteLine("=========================== END");
                     
                     writer.WriteLine("=========================== START");
-                    writer.WriteLine(_reader.Read(action));
+                    writer.WriteLine(DelegateReader.Read(action));
                     writer.WriteLine("===========================");
                     writer.WriteLine(handle.Artifact);
                     writer.WriteLine("=========================== END");
