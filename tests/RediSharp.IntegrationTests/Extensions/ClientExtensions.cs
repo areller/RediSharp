@@ -1,13 +1,23 @@
 using System;
 using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
+using System.Security;
+using System.Text;
 using System.Threading.Tasks;
+using LiveDelegate.ILSpy;
 using StackExchange.Redis;
 
 namespace RediSharp.IntegrationTests.Extensions
-{
+{ 
     public static class ClientExtensions
     {
         private static object _globalSync = new object();
+        private static IDelegateReader _reader = DelegateReader.CreateWithDefaultAssemblyProvider();
         
         public static async Task<TRes> ExecuteP<TRes>(this Client<IDatabase> client, Function<IDatabase, TRes> action,
             RedisValue[] arguments = null, RedisKey[] keys = null)
@@ -15,17 +25,21 @@ namespace RediSharp.IntegrationTests.Extensions
             var handle = client.GetHandle(action);
             await handle.Init();
 
-            using (var writer = new System.IO.StreamWriter(System.Console.OpenStandardOutput()))
+            using (var writer = new StreamWriter(System.Console.OpenStandardOutput()))
             {
                 lock (_globalSync)
                 {
+                    Console.WriteLine("=========================== START");
+                    Console.WriteLine(_reader.Read(action));
                     Console.WriteLine("===========================");
                     Console.WriteLine(handle.Artifact);
-                    Console.WriteLine("===========================");
+                    Console.WriteLine("=========================== END");
                     
+                    writer.WriteLine("=========================== START");
+                    writer.WriteLine(_reader.Read(action));
                     writer.WriteLine("===========================");
                     writer.WriteLine(handle.Artifact);
-                    writer.WriteLine("===========================");
+                    writer.WriteLine("=========================== END");
                 }
             }
 
