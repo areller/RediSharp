@@ -28,13 +28,13 @@ namespace RediSharp.IntegrationTests.Extensions
             {
                 lock (_globalSync)
                 {
-                    Console.WriteLine("=========================== START (2)");
+                    Console.WriteLine("=========================== START (3)");
                     Console.WriteLine(DelegateReader.Read(action));
                     Console.WriteLine("===========================");
                     Console.WriteLine(handle.Artifact);
                     Console.WriteLine("=========================== END");
                     
-                    writer.WriteLine("=========================== START (2)");
+                    writer.WriteLine("=========================== START (3)");
                     writer.WriteLine(DelegateReader.Read(action));
                     writer.WriteLine("===========================");
                     writer.WriteLine(handle.Artifact);
