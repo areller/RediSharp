@@ -1,8 +1,7 @@
 using System;
 using System.Linq;
 using ICSharpCode.Decompiler.CSharp.Syntax;
-using LiveDelegate.ILSpy;
-using LiveDelegate.ILSpy.Extensions;
+using RediSharp.Decompilation;
 
 namespace RediSharp
 {
@@ -30,10 +29,9 @@ namespace RediSharp
         
         #region Factory
 
-        public static DecompilationResult CreateFromDelegate<TCursor, TRes>(IDelegateReader reader,
-            Function<TCursor, TRes> function)
+        public static DecompilationResult CreateFromDelegate<TCursor, TRes>(Function<TCursor, TRes> function)
         {
-            var method = reader.Read(function)?.FirstMethodOrDefault();
+            var method = DelegateReader.ReadCached(function)?.FirstMethodOrDefault();
             if (method is null)
             {
                 throw new Exception("Unable to extract method from delegate");

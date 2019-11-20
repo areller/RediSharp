@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using RediSharp.Enums;
 using RediSharp.RedIL;
 using RediSharp.RedIL.Enums;
 using RediSharp.RedIL.Nodes;

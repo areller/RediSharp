@@ -3,45 +3,44 @@ using System.Collections.Generic;
 using RediSharp.RedIL.Enums;
 using RediSharp.RedIL.Extensions;
 using RediSharp.RedIL.Nodes;
+using RediSharp.RedIL.Resolving;
 using RediSharp.RedIL.Resolving.Attributes;
 using RediSharp.RedIL.Resolving.CommonResolvers;
-using StackExchange.Redis;
 
-namespace RediSharp.RedIL.Resolving.Types
+namespace RediSharp.Lib.Internal.Types
 {
-    class HashEntryResolverPack
+    class KeyValuePairResolverPack
     {
         class ConstructorResolver : RedILObjectResolver
         {
-            public override ExpressionNode Resolve(Context context, ExpressionNode[] arguments, ExpressionNode[] elements)
+            public override ExpressionNode Resolve(Context context, ExpressionNode[] arguments,
+                ExpressionNode[] elements)
             {
                 return new ArrayTableDefinitionNode(new ExpressionNode[] {arguments.At(0), arguments.At(1)});
             }
         }
         
         [RedILDataType(DataValueType.KVPair)]
-        class HashEntryProxy
+        public class KeyValuePairProxy<K, V>
         {
             [RedILResolve(typeof(ConstructorResolver))]
-            public HashEntryProxy(RedisValue name, RedisValue value)
+            public KeyValuePairProxy(K key, V value)
             {
+                
             }
-            
+
             [RedILResolve(typeof(TableAccessMemberResolver), DataValueType.Integer, 1)]
-            public RedisValue Name { get; }
+            public K Key { get; }
 
             [RedILResolve(typeof(TableAccessMemberResolver), DataValueType.Integer, 2)]
-            public RedisValue Value { get; }
-
-            [RedILResolve(typeof(TableAccessMemberResolver), DataValueType.Integer, 1)]
-            public RedisValue Key { get; }
+            public V Value { get; }
         }
         
         public static Dictionary<Type, Type> GetMapToProxy()
         {
             return new Dictionary<Type, Type>()
             {
-                { typeof(HashEntry), typeof(HashEntryProxy) }
+                { typeof(KeyValuePair<,>), typeof(KeyValuePairProxy<,>) }
             };
         }
     }

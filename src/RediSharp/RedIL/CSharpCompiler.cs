@@ -8,7 +8,7 @@ using ICSharpCode.Decompiler.CSharp.Syntax;
 using ICSharpCode.Decompiler.CSharp.Syntax.PatternMatching;
 using ICSharpCode.Decompiler.Semantics;
 using ICSharpCode.Decompiler.TypeSystem;
-using RediSharp.Enums;
+using RediSharp.Lua;
 using RediSharp.RedIL.Enums;
 using RediSharp.RedIL.Extensions;
 using RediSharp.RedIL.Nodes;
@@ -904,6 +904,11 @@ namespace RediSharp.RedIL
 
             #region Unused
 
+            public RedILNode VisitLocalFunctionDeclarationStatement(LocalFunctionDeclarationStatement localFunctionDeclarationStatement)
+            {
+                throw new NotImplementedException();
+            }
+            
             public RedILNode VisitAnonymousMethodExpression(AnonymousMethodExpression anonymousMethodExpression)
             {
                 throw new NotImplementedException();

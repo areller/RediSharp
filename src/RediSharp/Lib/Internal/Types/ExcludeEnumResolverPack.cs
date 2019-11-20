@@ -2,18 +2,20 @@ using System;
 using System.Collections.Generic;
 using RediSharp.RedIL.Enums;
 using RediSharp.RedIL.Nodes;
+using RediSharp.RedIL.Resolving;
 using RediSharp.RedIL.Resolving.Attributes;
 using StackExchange.Redis;
 
-namespace RediSharp.RedIL.Resolving.Types
+namespace RediSharp.Lib.Internal.Types
 {
-    class SetOperationEnumResolverPack
+    class ExcludeEnumResolverPack
     {
-        private static readonly Dictionary<SetOperation, int> _map = new Dictionary<SetOperation, int>()
+        private static readonly Dictionary<Exclude, int> _map = new Dictionary<Exclude, int>()
         {
-            {SetOperation.Union, 0},
-            {SetOperation.Intersect, 1},
-            {SetOperation.Difference, 2}
+            {Exclude.None, 0},
+            {Exclude.Start, 1},
+            {Exclude.Stop, 2},
+            {Exclude.Both, 3}
         };
 
         class EnumResolver : RedILMemberResolver
@@ -22,7 +24,7 @@ namespace RediSharp.RedIL.Resolving.Types
 
             public EnumResolver(object arg)
             {
-                _res = (ConstantValueNode) _map[(SetOperation) arg];
+                _res = (ConstantValueNode) _map[(Exclude) arg];
             }
             
             public override ExpressionNode Resolve(Context context, ExpressionNode caller)
@@ -35,28 +37,30 @@ namespace RediSharp.RedIL.Resolving.Types
         {
             public override ExpressionNode Resolve(Context context, object value)
             {
-                var setOp = (SetOperation) value;
-                return (ConstantValueNode) _map[setOp];
+                var exclude = (Exclude) value;
+                return (ConstantValueNode) _map[exclude];
             }
         }
 
         [RedILDataType(DataValueType.Integer)]
         [RedILResolve(typeof(EnumValueResolver))]
-        enum SetOperationProxy
+        enum ExcludeProxy
         {
-            [RedILResolve(typeof(EnumResolver), SetOperation.Union)]
-            Union,
-            [RedILResolve(typeof(EnumResolver), SetOperation.Intersect)]
-            Intersect,
-            [RedILResolve(typeof(EnumResolver), SetOperation.Difference)]
-            Difference
+            [RedILResolve(typeof(EnumResolver), Exclude.None)]
+            None,
+            [RedILResolve(typeof(EnumResolver), Exclude.Start)]
+            Start,
+            [RedILResolve(typeof(EnumResolver), Exclude.Stop)]
+            Stop,
+            [RedILResolve(typeof(EnumResolver), Exclude.Both)]
+            Both
         }
 
         public static Dictionary<Type, Type> GetMapToProxy()
         {
             return new Dictionary<Type, Type>()
             {
-                {typeof(SetOperation), typeof(SetOperationProxy)}
+                {typeof(Exclude), typeof(ExcludeProxy)}
             };
         }
     }

@@ -1,7 +1,6 @@
 using System;
 using System.Diagnostics;
 using System.Reflection;
-using LiveDelegate.ILSpy;
 using RediSharp.Lua;
 using RediSharp.RedIL;
 using StackExchange.Redis;
@@ -15,8 +14,6 @@ namespace RediSharp
         private CSharpCompiler _csharpCompiler;
 
         private LuaHandler _luaHandler;
-
-        private IDelegateReader _delegateReader;
 
         #endregion
         
@@ -60,7 +57,6 @@ namespace RediSharp
         {
             _csharpCompiler = new CSharpCompiler();
             _luaHandler = new LuaHandler(db);
-            _delegateReader = DelegateReader.CreateCachedWithDefaultAssemblyProvider();
 
             DebugInstance = debugInstance;
             Database = db;
@@ -74,7 +70,7 @@ namespace RediSharp
         /// <returns>A non-initialized handle for executing the function</returns>
         public IHandle<TRes> GetHandle<TRes>(Function<TCursor, TRes> function)
         {
-            var decompilation = DecompilationResult.CreateFromDelegate(_delegateReader, function);
+            var decompilation = DecompilationResult.CreateFromDelegate(function);
             var redIL = _csharpCompiler.Compile(decompilation);
 
             // We create the Lua handle regardless of whether we in Debug or not
