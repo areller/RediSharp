@@ -1,36 +1,41 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using RediSharp.Lib;
-using RediSharp.Lua;
+﻿using RediSharp.Debugging;
 using StackExchange.Redis;
+using System;
 
 namespace RediSharp.Demo
 {
+    //[DebugProcedureGenerator]
+    [RedisProcedure]
+    partial class MyProcedure : IRedisProcedure<string>
+    {
+        public string Define(IDatabase client, RedisValue[] args, RedisKey[] keys)
+        {
+            var c = 3 + 1;
+            for (int i = 0; i < c + 1; i++)
+            {
+                client.StringSet($"name_{i}", "areller");
+                var x = client.StringGet($"name_{i}");
+            }
+
+            return client.StringGet($"name_{c}");
+        }
+    }
+
+    [RedisProcedure]
+    public partial class MyProcedure2 : IRedisProcedure<string>
+    {
+        public string Define(IDatabase client, RedisValue[] args, RedisKey[] keys)
+        {
+            return client.StringGet(keys[0]);
+        }
+    }
+
     class Program
     {
-        static RedisValue RedisFunction(IDatabase cursor, RedisValue[] args, RedisKey[] keys)
+        static void Main(string[] args)
         {
-            cursor.StringSet("name", "areller");
-            return cursor.StringGet("name");
-        }
-        
-        static async Task Main(string[] args)
-        {
-            var connection = await ConnectionMultiplexer.ConnectAsync("localhost");
-
-            Client<IDatabase> client = new SEClient(connection.GetDatabase(0));
-            var handle = client.GetHandle(RedisFunction);
-
-            // Printing Lua
-            Console.WriteLine("===========================");
-            Console.WriteLine(handle.Artifact);
-            Console.WriteLine("===========================");
-
-            await handle.Init();
-            var res = await handle.Execute(new RedisValue[] {5}, new RedisKey[] {"countKey"});
-            
-            Console.WriteLine(res);
+            Console.WriteLine(MyProcedure.GetLua());
+            Console.WriteLine(MyProcedure2.GetLua());
         }
     }
 }
