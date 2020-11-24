@@ -4,8 +4,7 @@
     {
         public DataValueType DataValueType { get; }
 
-        protected ExpressionNode(DataValueType dataValueType, Node? parent)
-            : base(parent)
+        protected ExpressionNode(DataValueType dataValueType)
         {
             DataValueType = dataValueType;
         }

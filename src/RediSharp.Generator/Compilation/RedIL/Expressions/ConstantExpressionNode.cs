@@ -4,12 +4,17 @@
     {
         public object Value { get; }
 
-        public ConstantExpressionNode(object value, DataValueType dataValueType, Node? parent)
-            : base(dataValueType, parent)
+        public ConstantExpressionNode(object value, DataValueType dataValueType)
+            : base(dataValueType)
         {
             Value = value;
         }
 
-        public override TReturn AcceptVisitor<TReturn, TState>(IRedILVisitor<TReturn, TState> visitor, TState state) => visitor.VisitConstantExpressionNode(this, state);
+        public override TReturn? AcceptVisitor<TReturn, TState>(RedILVisitor<TReturn, TState> visitor, TState? state)
+            where TReturn : class
+            where TState : class
+        {
+            return visitor.VisitConstantExpressionNode(this, state);
+        }
     }
 }

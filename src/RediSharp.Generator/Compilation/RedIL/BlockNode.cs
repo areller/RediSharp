@@ -6,12 +6,16 @@ namespace RediSharp.Generator.Compilation.RedIL
     {
         public IList<Node> Children { get; }
 
-        public BlockNode(IList<Node> children, Node? parent)
-            : base(parent)
-        {
+        public BlockNode(IList<Node> children)
+        { 
             Children = children;
         }
 
-        public override TReturn AcceptVisitor<TReturn, TState>(IRedILVisitor<TReturn, TState> visitor, TState state) => visitor.VisitBlockNode(this, state);
+        public override TReturn? AcceptVisitor<TReturn, TState>(RedILVisitor<TReturn, TState> visitor, TState? state)
+            where TReturn : class
+            where TState : class
+        {
+            return visitor.VisitBlockNode(this, state);
+        }
     }
 }

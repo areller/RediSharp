@@ -2,13 +2,16 @@
 {
     abstract class Node
     {
-        public Node? Parent { get; }
+        public abstract TReturn? AcceptVisitor<TReturn, TState>(RedILVisitor<TReturn, TState> visitor, TState? state)
+            where TReturn : class
+            where TState : class;
 
-        protected Node(Node? parent)
+        public TReturn? AcceptVisitor<TVisitor, TReturn, TState>(TState? state)
+            where TVisitor : RedILVisitor<TReturn, TState>, new()
+            where TReturn : class
+            where TState : class
         {
-            Parent = parent;
+            return AcceptVisitor(new TVisitor(), state);
         }
-
-        public abstract TReturn AcceptVisitor<TReturn, TState>(IRedILVisitor<TReturn, TState> visitor, TState state);
     }
 }
